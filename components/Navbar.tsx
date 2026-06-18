@@ -26,11 +26,8 @@ export default function Navbar() {
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         height: 72,
       }}>
-        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
-          <Image src="/logo-sensare.png" alt="Sensarè" width={44} height={44} style={{ objectFit: 'contain' }} />
-          <span style={{ fontFamily: 'OleoScript', fontSize: 22, color: 'var(--rose-gold)', letterSpacing: 1 }}>
-            Sensarè
-          </span>
+        <Link href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
+          <Image src="/logo-sensare.png" alt="Sensarè" width={64} height={64} style={{ objectFit: 'contain' }} />
         </Link>
 
         {/* Desktop nav */}

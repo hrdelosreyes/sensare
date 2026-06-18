@@ -64,8 +64,7 @@ export default function Footer() {
         display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 40,
       }}>
         <div>
-          <Image src="/logo-sensare.png" alt="Sensarè" width={52} height={52} style={{ objectFit: 'contain', marginBottom: 12 }} />
-          <p style={{ fontFamily: 'OleoScript', fontSize: 20, color: 'var(--rose-gold)', marginBottom: 8 }}>Sensarè</p>
+          <Image src="/logo-sensare.png" alt="Sensarè" width={80} height={80} style={{ objectFit: 'contain', marginBottom: 12 }} />
           <p style={{ fontFamily: 'PlayfairDisplay', fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.7 }}>
             Artisanal dark chocolate infused with ancient botanicals. Handcrafted in the Philippines.
           </p>
