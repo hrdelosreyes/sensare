@@ -31,7 +31,7 @@ const faqs = [
 export default async function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
   const { data: product } = await supabaseAdmin()
-    .from('products').select('*').eq('slug', slug).eq('is_active', true).single()
+    .from('sensare_products').select('*').eq('slug', slug).eq('is_active', true).single()
 
   if (!product) notFound()
 
