@@ -103,9 +103,9 @@ export default async function HomePage() {
             Sensarè isn't just chocolate. It's a five-step ritual designed to slow you down and bring you closer.
           </p>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 32 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 24 }}>
           {ritualSteps.map(step => (
-            <div key={step.num} style={{ textAlign: 'center', padding: '32px 20px' }}>
+            <div key={step.num} style={{ textAlign: 'center', padding: '32px 16px' }}>
               <p style={{ fontFamily: 'OleoScript', fontSize: 40, color: 'rgba(201,144,106,0.25)', marginBottom: 8 }}>{step.num}</p>
               <p style={{ fontFamily: 'PlayfairDisplay', fontWeight: 700, fontSize: 16, color: 'var(--rose-gold)', marginBottom: 10 }}>{step.title}</p>
               <p style={{ fontFamily: 'PlayfairDisplay', fontSize: 14, color: 'var(--cream-dim)', lineHeight: 1.7 }}>{step.body}</p>
