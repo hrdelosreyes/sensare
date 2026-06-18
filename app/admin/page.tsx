@@ -1,4 +1,4 @@
-export const dynamic = 'force-dynamic'
+﻿export const dynamic = 'force-dynamic'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { supabaseAdmin } from '@/lib/supabase'
@@ -17,11 +17,11 @@ export default async function AdminPage() {
     { data: subscribers },
     { data: testimonials },
   ] = await Promise.all([
-    db.from('orders').select('*').order('created_at', { ascending: false }).limit(100),
-    db.from('products').select('*').order('sort_order'),
-    db.from('restock_notifications').select('*, products(name)').is('notified_at', null).order('created_at', { ascending: false }),
-    db.from('newsletter_subscribers').select('*').is('unsubscribed_at', null).order('subscribed_at', { ascending: false }),
-    db.from('testimonials').select('*').order('sort_order'),
+    db.from('sensare_orders').select('*').order('created_at', { ascending: false }).limit(100),
+    db.from('sensare_products').select('*').order('sort_order'),
+    db.from('sensare_restock_notifications').select('*, sensare_products(name)').is('notified_at', null).order('created_at', { ascending: false }),
+    db.from('sensare_newsletter_subscribers').select('*').is('unsubscribed_at', null).order('subscribed_at', { ascending: false }),
+    db.from('sensare_testimonials').select('*').order('sort_order'),
   ])
 
   return <AdminClient orders={orders || []} products={products || []} restock={restock || []} subscribers={subscribers || []} testimonials={testimonials || []} />

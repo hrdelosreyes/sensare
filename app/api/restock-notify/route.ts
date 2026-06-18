@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+﻿import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 
 export async function POST(req: NextRequest) {
@@ -6,7 +6,7 @@ export async function POST(req: NextRequest) {
     const { email, productId } = await req.json()
     if (!email || !productId) return NextResponse.json({ error: 'Missing fields' }, { status: 400 })
 
-    const { error } = await supabaseAdmin().from('restock_notifications').upsert(
+    const { error } = await supabaseAdmin().from('sensare_restock_notifications').upsert(
       { email: email.toLowerCase(), product_id: productId },
       { onConflict: 'email,product_id', ignoreDuplicates: true }
     )

@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+﻿import { NextRequest, NextResponse } from 'next/server'
 import { createHmac } from 'crypto'
 import { supabaseAdmin } from '@/lib/supabase'
 import { Resend } from 'resend'
@@ -23,27 +23,27 @@ export async function POST(req: NextRequest) {
   const paymentId = params.get('payment_id') || ''
 
   if (status !== 'completed') {
-    await supabaseAdmin().from('orders')
+    await supabaseAdmin().from('sensare_orders')
       .update({ payment_status: 'failed', updated_at: new Date().toISOString() })
       .eq('reference_number', refNum)
     return NextResponse.json({ ok: true })
   }
 
   const { data: order } = await supabaseAdmin()
-    .from('orders').select('*').eq('reference_number', refNum).single()
+    .from('sensare_orders').select('*').eq('reference_number', refNum).single()
 
   if (!order) return NextResponse.json({ error: 'Order not found' }, { status: 404 })
   if (order.payment_status === 'paid') return NextResponse.json({ ok: true }) // idempotent
 
   // Mark paid
-  await supabaseAdmin().from('orders')
+  await supabaseAdmin().from('sensare_orders')
     .update({ payment_status: 'paid', updated_at: new Date().toISOString() })
     .eq('reference_number', refNum)
 
   // Decrement stock
   const items = order.items as Array<{ product_id: string; qty: number }>
   for (const item of items) {
-    await supabaseAdmin().rpc('decrement_stock', { p_product_id: item.product_id, p_qty: item.qty })
+    await supabaseAdmin().rpc('sensare_decrement_stock', { p_product_id: item.product_id, p_qty: item.qty })
   }
 
   // Send confirmation email if we have a real email

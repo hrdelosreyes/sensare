@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+﻿import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 
 export async function POST(req: NextRequest) {
@@ -7,7 +7,7 @@ export async function POST(req: NextRequest) {
     if (!productId || qty < 1) return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
 
     const { data: product } = await supabaseAdmin()
-      .from('products').select('*').eq('id', productId).eq('is_active', true).single()
+      .from('sensare_products').select('*').eq('id', productId).eq('is_active', true).single()
 
     if (!product) return NextResponse.json({ error: 'Product not found' }, { status: 404 })
     if (product.stock_qty < qty) return NextResponse.json({ error: 'Not enough stock' }, { status: 409 })
@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
     const hitpay = await hitpayRes.json()
 
     // Create pending order
-    await supabaseAdmin().from('orders').insert({
+    await supabaseAdmin().from('sensare_orders').insert({
       reference_number: refNum,
       customer_name: 'Pending',
       customer_email: 'pending@sensare.com',

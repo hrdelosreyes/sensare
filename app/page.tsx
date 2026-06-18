@@ -1,4 +1,4 @@
-export const dynamic = 'force-dynamic'
+﻿export const dynamic = 'force-dynamic'
 
 import Link from 'next/link'
 import Image from 'next/image'
@@ -8,8 +8,8 @@ import RestockForm from '@/components/RestockForm'
 async function getHomeData() {
   const db = supabaseAdmin()
   const [{ data: products }, { data: testimonials }] = await Promise.all([
-    db.from('products').select('*').eq('is_active', true).order('sort_order'),
-    db.from('testimonials').select('*').eq('is_featured', true).order('sort_order'),
+    db.from('sensare_products').select('*').eq('is_active', true).order('sort_order'),
+    db.from('sensare_testimonials').select('*').eq('is_featured', true).order('sort_order'),
   ])
   return { products: products || [], testimonials: testimonials || [] }
 }

@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+﻿import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { Resend } from 'resend'
 
@@ -7,7 +7,7 @@ export async function POST(req: NextRequest) {
     const { email } = await req.json()
     if (!email) return NextResponse.json({ error: 'Missing email' }, { status: 400 })
 
-    await supabaseAdmin().from('newsletter_subscribers')
+    await supabaseAdmin().from('sensare_newsletter_subscribers')
       .upsert({ email: email.toLowerCase() }, { onConflict: 'email', ignoreDuplicates: true })
 
     const resend = new Resend(process.env.RESEND_API_KEY)
