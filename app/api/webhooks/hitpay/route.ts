@@ -40,10 +40,11 @@ export async function POST(req: NextRequest) {
     .update({ payment_status: 'paid', updated_at: new Date().toISOString() })
     .eq('reference_number', refNum)
 
-  // Decrement stock
+  // Decrement stock (row-locked, returns false if insufficient)
   const items = order.items as Array<{ product_id: string; qty: number }>
   for (const item of items) {
-    await supabaseAdmin().rpc('sensare_decrement_stock', { p_product_id: item.product_id, p_qty: item.qty })
+    const { data: ok } = await supabaseAdmin().rpc('sensare_decrement_stock', { p_product_id: item.product_id, p_qty: item.qty })
+    if (!ok) console.warn(`Stock insufficient for product ${item.product_id} — auto-replenish should cover this`)
   }
 
   // Send confirmation email if we have a real email

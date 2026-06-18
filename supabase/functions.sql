@@ -1,10 +1,24 @@
 -- Decrement stock safely for Sensarè products
+-- Returns false if stock is insufficient (race-condition safe via row lock)
 create or replace function sensare_decrement_stock(p_product_id uuid, p_qty integer)
-returns void language plpgsql as $$
+returns boolean language plpgsql as $$
+declare
+  v_stock integer;
 begin
+  select stock_qty into v_stock
+  from sensare_products
+  where id = p_product_id
+  for update;
+
+  if v_stock < p_qty then
+    return false;
+  end if;
+
   update sensare_products
   set stock_qty = greatest(0, stock_qty - p_qty)
   where id = p_product_id;
+
+  return true;
 end;
 $$;
 
