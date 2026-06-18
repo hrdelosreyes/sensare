@@ -215,7 +215,7 @@ function ProductCard({ product }: { product: Record<string, unknown> }) {
         <p style={{ fontFamily: 'Allura', fontSize: 18, color: 'var(--rose-gold)', marginBottom: 4 }}>{product.tagline as string}</p>
         <h3 style={{ fontFamily: 'PlayfairDisplay', fontWeight: 700, fontSize: 22, color: 'var(--cream)', marginBottom: 12 }}>{product.name as string}</h3>
         <p style={{ fontFamily: 'PlayfairDisplay', fontSize: 14, color: 'var(--cream-dim)', lineHeight: 1.7, marginBottom: 20, flex: 1 }}>
-          {(product.description as string)?.slice(0, 120)}…
+          {product.description as string}
         </p>
         <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
           <span style={{ fontFamily: 'PlayfairDisplay', fontWeight: 700, fontSize: 22, color: 'var(--rose-gold)' }}>₱{(product.price_php as number).toFixed(0)}</span>
