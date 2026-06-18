@@ -17,7 +17,7 @@ const faqs = [
   {
     category: 'Ingredients & Safety',
     items: [
-      { q: 'What botanicals are in Sensarè?', a: 'Each piece contains 60% Davao dark chocolate, damiana leaf, maca root, and ashwagandha — all natural, traditionally used herbs.' },
+      { q: 'What botanicals are in Sensarè?', a: 'Each piece contains 60% Davao dark chocolate, damiana leaf, maca root, ashwagandha, and ceylon cinnamon — all natural, traditionally used herbs.' },
       { q: 'Is this safe to take regularly?', a: 'Yes. Sensarè is crafted with natural botanicals traditionally used to support vitality, balance, and sensual energy. We recommend one box per session.' },
       { q: 'Is this safe during pregnancy or breastfeeding?', a: 'No. We advise against it. Some botanicals (damiana, maca) are not recommended during pregnancy or lactation. Consult your healthcare provider.' },
       { q: 'Is this vegan?', a: 'Yes. Sensarè contains no dairy, no animal products, and is sweetened naturally.' },
