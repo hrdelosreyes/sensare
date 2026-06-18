@@ -1,14 +1,7 @@
--- Decrement stock safely for Sensarè products
-create or replace function sensare_decrement_stock(p_product_id uuid, p_qty integer)
-returns void language plpgsql as $$
-begin
-  update sensare_products
-  set stock_qty = greatest(0, stock_qty - p_qty)
-  where id = p_product_id;
-end;
-$$;
+-- Sensarè auto-replenishment trigger
+-- Run this in Supabase SQL Editor (Dashboard → SQL Editor → New query)
+-- When any SKU's stock_qty drops below 10, it is automatically topped up by 50 units.
 
--- Auto-replenish: add 50 units whenever stock drops below 10
 create or replace function sensare_auto_replenish()
 returns trigger language plpgsql as $$
 begin
