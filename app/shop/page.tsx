@@ -30,11 +30,17 @@ export default async function ShopPage() {
           {(products || []).map((product: Record<string, unknown>) => {
             const isOutOfStock = (product.stock_qty as number) <= 0
             const hasDiscount = product.compare_at_price_php !== null
+            const productImages: Record<string, string> = {
+              'intimate-indulgence': '/images/product-1.png',
+              'ritual-bundle': '/images/product-2.png',
+              'lovers-gift-set': '/images/product-3.png',
+            }
+            const imgSrc = productImages[product.slug as string] || '/images/product-1.png'
 
             return (
               <div key={product.id as string} style={{ background: 'var(--chocolate)', border: '1px solid rgba(201,144,106,0.15)', borderRadius: 4, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-                <div style={{ height: 320, background: `linear-gradient(135deg, var(--mocha) 0%, rgba(44,24,16,0.8) 100%)`, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-                  <Image src="/logo-sensare.png" alt={product.name as string} width={96} height={96} style={{ opacity: 0.35, objectFit: 'contain' }} />
+                <div style={{ height: 320, position: 'relative', overflow: 'hidden' }}>
+                  <Image src={imgSrc} alt={product.name as string} fill style={{ objectFit: 'cover', objectPosition: 'center' }} />
                   {isOutOfStock && (
                     <div style={{ position: 'absolute', top: 20, left: 20, background: 'rgba(15,7,5,0.9)', padding: '5px 14px', fontFamily: 'PlayfairDisplay', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--text-muted)' }}>Sold Out</div>
                   )}

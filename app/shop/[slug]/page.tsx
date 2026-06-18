@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation'
+import Image from 'next/image'
 import { supabaseAdmin } from '@/lib/supabase'
 import CheckoutButton from '@/components/CheckoutButton'
 import RestockForm from '@/components/RestockForm'
@@ -6,7 +7,7 @@ import type { Metadata } from 'next'
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params
-  const { data } = await supabaseAdmin().from('products').select('name, description').eq('slug', slug).single()
+  const { data } = await supabaseAdmin().from('sensare_products').select('name, description').eq('slug', slug).single()
   if (!data) return {}
   return { title: data.name, description: data.description }
 }
@@ -42,8 +43,11 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
       {/* Product hero */}
       <div style={{ maxWidth: 1100, margin: '0 auto', padding: '64px 24px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 64, alignItems: 'start' }}>
         {/* Image */}
-        <div style={{ background: `linear-gradient(135deg, var(--mocha) 0%, var(--chocolate) 100%)`, borderRadius: 4, aspectRatio: '1', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(201,144,106,0.15)', position: 'relative', minHeight: 380 }}>
-          <img src="/logo-sensare.png" alt={product.name} style={{ width: 120, height: 120, objectFit: 'contain', opacity: 0.4 }} />
+        <div style={{ borderRadius: 4, overflow: 'hidden', position: 'relative', minHeight: 420, border: '1px solid rgba(201,144,106,0.15)' }}>
+          <Image
+            src={({ 'intimate-indulgence': '/images/product-1.png', 'ritual-bundle': '/images/product-2.png', 'lovers-gift-set': '/images/product-3.png' } as Record<string,string>)[product.slug] || '/images/product-1.png'}
+            alt={product.name} fill style={{ objectFit: 'cover', objectPosition: 'center' }}
+          />
           {isOutOfStock && (
             <div style={{ position: 'absolute', top: 20, left: 20, background: 'rgba(15,7,5,0.9)', padding: '6px 16px', fontFamily: 'PlayfairDisplay', fontSize: 12, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--text-muted)' }}>Sold Out</div>
           )}

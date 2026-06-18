@@ -30,11 +30,14 @@ export default async function HomePage() {
       {/* Hero */}
       <section style={{
         minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-        background: `radial-gradient(ellipse at 60% 40%, rgba(201,144,106,0.08) 0%, transparent 70%), var(--espresso)`,
-        padding: '120px 24px 80px', textAlign: 'center', position: 'relative', overflow: 'hidden',
+        position: 'relative', overflow: 'hidden',
+        padding: '120px 24px 80px', textAlign: 'center',
       }}>
-        <div style={{ position: 'absolute', width: 600, height: 600, borderRadius: '50%', border: '1px solid rgba(201,144,106,0.06)', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', pointerEvents: 'none' }} />
-        <div style={{ position: 'absolute', width: 900, height: 900, borderRadius: '50%', border: '1px solid rgba(201,144,106,0.03)', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', pointerEvents: 'none' }} />
+        {/* Full-bleed hero image */}
+        <Image src="/images/hero.png" alt="Sensarè couple" fill priority
+          style={{ objectFit: 'cover', objectPosition: 'center top' }} />
+        {/* Dark overlay */}
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(15,7,5,0.55) 0%, rgba(15,7,5,0.7) 100%)' }} />
 
         <div style={{ position: 'relative', maxWidth: 720 }}>
           <p style={{ fontFamily: 'Allura', fontSize: 28, color: 'var(--rose-gold)', marginBottom: 16 }}>Handcrafted in the Philippines</p>
@@ -72,8 +75,10 @@ export default async function HomePage() {
       </section>
 
       {/* Brand story strip */}
-      <section style={{ background: 'var(--mocha)', padding: '80px 24px', borderTop: '1px solid rgba(201,144,106,0.1)', borderBottom: '1px solid rgba(201,144,106,0.1)' }}>
-        <div style={{ maxWidth: 800, margin: '0 auto', textAlign: 'center' }}>
+      <section style={{ borderTop: '1px solid rgba(201,144,106,0.1)', borderBottom: '1px solid rgba(201,144,106,0.1)', position: 'relative', overflow: 'hidden' }}>
+        <Image src="/images/brand-story.png" alt="Ana & Ramon" fill style={{ objectFit: 'cover', objectPosition: 'center' }} />
+        <div style={{ position: 'absolute', inset: 0, background: 'rgba(15,7,5,0.75)' }} />
+        <div style={{ maxWidth: 800, margin: '0 auto', textAlign: 'center', padding: '80px 24px', position: 'relative' }}>
           <p style={{ fontFamily: 'Allura', fontSize: 36, color: 'var(--rose-gold)', marginBottom: 16 }}>Born from Davao</p>
           <p style={{ fontFamily: 'PlayfairDisplay', fontSize: 18, fontStyle: 'italic', color: 'var(--cream-dim)', lineHeight: 1.9, marginBottom: 28 }}>
             "I made the first batch for my partner. I wanted something that would slow us both down — something intentional. Davao cacao, ancient herbs, and a lot of love. That's Sensarè."
@@ -165,14 +170,21 @@ export default async function HomePage() {
   )
 }
 
+const productImages: Record<string, string> = {
+  'intimate-indulgence': '/images/product-1.png',
+  'ritual-bundle': '/images/product-2.png',
+  'lovers-gift-set': '/images/product-3.png',
+}
+
 function ProductCard({ product }: { product: Record<string, unknown> }) {
   const isOutOfStock = (product.stock_qty as number) <= 0
   const hasDiscount = product.compare_at_price_php !== null
+  const imgSrc = productImages[product.slug as string] || '/images/product-1.png'
 
   return (
     <div style={{ background: 'var(--chocolate)', border: '1px solid rgba(201,144,106,0.15)', borderRadius: 4, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-      <div style={{ height: 280, background: `linear-gradient(135deg, var(--mocha) 0%, var(--chocolate) 100%)`, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-        <Image src="/logo-sensare.png" alt={product.name as string} width={80} height={80} style={{ opacity: 0.35, objectFit: 'contain' }} />
+      <div style={{ height: 280, position: 'relative', overflow: 'hidden' }}>
+        <Image src={imgSrc} alt={product.name as string} fill style={{ objectFit: 'cover', objectPosition: 'center', transition: 'transform 0.4s ease' }} />
         {isOutOfStock && (
           <div style={{ position: 'absolute', top: 16, right: 16, background: 'rgba(15,7,5,0.85)', padding: '4px 12px', fontFamily: 'PlayfairDisplay', fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--text-muted)' }}>
             Sold Out

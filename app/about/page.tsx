@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
@@ -15,6 +16,12 @@ export default function AboutPage() {
           Born from a Desire<br />to Slow Down
         </h1>
       </section>
+
+      {/* Hero image */}
+      <div style={{ position: 'relative', height: 480, overflow: 'hidden' }}>
+        <Image src="/images/hero-2.png" alt="Sensarè couple" fill style={{ objectFit: 'cover', objectPosition: 'center top' }} />
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 40%, var(--espresso) 100%)' }} />
+      </div>
 
       <section style={{ maxWidth: 740, margin: '0 auto', padding: '72px 24px' }}>
         <p style={{ fontFamily: 'PlayfairDisplay', fontSize: 18, color: 'var(--cream-dim)', lineHeight: 2, marginBottom: 32 }}>
