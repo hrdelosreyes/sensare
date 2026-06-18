@@ -78,7 +78,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
           )}
 
           <p style={{ fontFamily: 'PlayfairDisplay', fontStyle: 'italic', fontSize: 12, color: 'var(--text-muted)', marginTop: 16, textAlign: 'center' }}>
-            Free delivery on orders ₱800+. Metro Manila: 1–3 days. Nationwide via LBC.
+            Free delivery on orders ₱1,000+. Metro Manila: 1–3 days. Nationwide via LBC.
           </p>
 
           {/* Disclaimer */}

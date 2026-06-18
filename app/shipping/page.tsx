@@ -11,8 +11,8 @@ export default function ShippingPage() {
       </section>
       <div style={{ maxWidth: 700, margin: '0 auto', padding: '64px 24px' }}>
         {[
-          { title: 'Metro Manila', details: ['1–3 business days', 'Flat rate ₱100 shipping', 'Free delivery on orders ₱800+'] },
-          { title: 'Nationwide (Provincial)', details: ['3–7 business days via LBC', 'Flat rate ₱150 shipping', 'Free delivery on orders ₱800+'] },
+          { title: 'Metro Manila', details: ['1–3 business days', 'Flat rate ₱100 shipping', 'Free delivery on orders ₱1,000+'] },
+          { title: 'Nationwide (Provincial)', details: ['3–7 business days via LBC', 'Flat rate ₱150 shipping', 'Free delivery on orders ₱1,000+'] },
           { title: 'Packaging', details: ['All orders are packed in our premium gift-ready box', 'Temperature-sensitive — avoid direct sunlight', 'Store under 25°C upon receipt'] },
           { title: 'Tracking', details: ['Tracking number sent via email once dispatched', 'For Metro Manila: same-day or next-day tracking available', 'For provinces: LBC tracking applies'] },
           { title: 'Issues with your order?', details: ['Contact us within 24 hours of delivery at hello@mysensare.com', 'We replace damaged or incorrect orders — no questions asked'] },

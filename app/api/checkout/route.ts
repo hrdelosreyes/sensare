@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
     if (product.stock_qty < qty) return NextResponse.json({ error: 'Not enough stock' }, { status: 409 })
 
     const total = product.price_php * qty
-    const shipping = total >= 800 ? 0 : 100
+    const shipping = total >= 1000 ? 0 : 100
     const grandTotal = total + shipping
 
     const refNum = `sns_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`

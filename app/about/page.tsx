@@ -32,7 +32,7 @@ export default function AboutPage() {
           Sensarè began with a question: <em>Why does intimacy feel like something we schedule instead of something we live?</em>
         </p>
         <p style={{ fontFamily: 'PlayfairDisplay', fontSize: 16, color: 'var(--cream-dim)', lineHeight: 1.9, marginBottom: 28 }}>
-          It started with a batch made at home — two heart-shaped pieces of Davao dark chocolate, infused with damiana, maca, and ashwagandha. Herbs that have been used across cultures for centuries to support vitality, calm, and connection. No synthetic compounds. No shortcuts.
+          It started with a batch made at home — two heart-shaped pieces of Davao dark chocolate, infused with damiana, maca, ashwagandha, and ceylon cinnamon. Herbs that have been used across cultures for centuries to support vitality, calm, and connection. No synthetic compounds. No shortcuts.
         </p>
         <p style={{ fontFamily: 'PlayfairDisplay', fontSize: 16, color: 'var(--cream-dim)', lineHeight: 1.9, marginBottom: 28 }}>
           The ritual came next. Not just eating chocolate — but unwrapping it slowly, savoring it together, talking. Creating a space where two people could actually arrive in the same room. That felt like the real product.
