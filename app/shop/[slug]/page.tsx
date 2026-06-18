@@ -17,7 +17,7 @@ const botanicals = [
   { name: 'Damiana Leaf', role: 'Traditional Mexican herb historically used to support mood and sensual energy' },
   { name: 'Maca Root', role: 'Andean adaptogen used for centuries to support vitality and stamina' },
   { name: 'Ashwagandha', role: 'Ayurvedic adaptogen that promotes calm, reduces stress, supports arousal' },
-  { name: 'Natural Sweetener', role: 'No refined sugar — lightly sweetened' },
+  { name: 'Ceylon Cinnamon', role: 'Warming spice that enhances circulation and adds a gentle heat' },
 ]
 
 const faqs = [
