@@ -38,6 +38,10 @@ export default async function HomePage() {
           style={{ objectFit: 'cover', objectPosition: 'center top' }} />
         {/* Dark overlay */}
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(15,7,5,0.55) 0%, rgba(15,7,5,0.7) 100%)' }} />
+        {/* Decorative wave — top right */}
+        <div style={{ position: 'absolute', top: -40, right: -60, width: 520, height: 340, pointerEvents: 'none', opacity: 0.09, filter: 'invert(1) sepia(0.2) brightness(1.5)' }}>
+          <Image src="/Asset 1.png" alt="" fill style={{ objectFit: 'contain' }} />
+        </div>
 
         <div style={{ position: 'relative', maxWidth: 720 }}>
           <p style={{ fontFamily: 'Allura', fontSize: 28, color: 'var(--rose-gold)', marginBottom: 16 }}>Handcrafted in the Philippines</p>
@@ -136,7 +140,11 @@ export default async function HomePage() {
       )}
 
       {/* Botanicals */}
-      <section style={{ padding: '80px 24px', textAlign: 'center' }}>
+      <section style={{ padding: '80px 24px', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
+        {/* Decorative wave — full width */}
+        <div style={{ position: 'absolute', bottom: -20, left: '50%', transform: 'translateX(-50%)', width: '110%', height: 120, pointerEvents: 'none', opacity: 0.07, filter: 'invert(1) sepia(0.2) brightness(1.5)' }}>
+          <Image src="/Asset 3.png" alt="" fill style={{ objectFit: 'contain' }} />
+        </div>
         <p style={{ fontFamily: 'Allura', fontSize: 30, color: 'var(--rose-gold)', marginBottom: 12 }}>What's Inside</p>
         <h2 style={{ fontFamily: 'PlayfairDisplay', fontWeight: 700, fontSize: 28, color: 'var(--cream)', marginBottom: 40 }}>Ancient Botanicals. Modern Love.</h2>
         <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 16, maxWidth: 800, margin: '0 auto' }}>
@@ -157,14 +165,20 @@ export default async function HomePage() {
       </section>
 
       {/* Final CTA */}
-      <section style={{ padding: '100px 24px', textAlign: 'center', background: `radial-gradient(ellipse at center, rgba(201,144,106,0.1) 0%, transparent 70%), var(--mocha)`, borderTop: '1px solid rgba(201,144,106,0.1)' }}>
-        <p style={{ fontFamily: 'Allura', fontSize: 40, color: 'var(--rose-gold)', marginBottom: 16 }}>Ready to Begin?</p>
-        <p style={{ fontFamily: 'PlayfairDisplay', fontSize: 17, color: 'var(--cream-dim)', marginBottom: 36, maxWidth: 480, margin: '0 auto 36px' }}>
-          Your next intentional evening together starts with two small pieces of chocolate.
-        </p>
-        <Link href="/shop" style={{ padding: '18px 48px', background: 'var(--rose-gold)', color: 'var(--espresso)', fontFamily: 'PlayfairDisplay', fontWeight: 700, fontSize: 15, letterSpacing: 2, textTransform: 'uppercase', textDecoration: 'none', borderRadius: 2 }}>
-          Shop the Collection
-        </Link>
+      <section style={{ padding: '100px 24px', textAlign: 'center', background: `radial-gradient(ellipse at center, rgba(201,144,106,0.1) 0%, transparent 70%), var(--mocha)`, borderTop: '1px solid rgba(201,144,106,0.1)', position: 'relative', overflow: 'hidden' }}>
+        {/* Decorative wave — centered behind text */}
+        <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 700, height: 240, pointerEvents: 'none', opacity: 0.08, filter: 'invert(1) sepia(0.2) brightness(1.5)' }}>
+          <Image src="/Asset 2.png" alt="" fill style={{ objectFit: 'contain' }} />
+        </div>
+        <div style={{ position: 'relative' }}>
+          <p style={{ fontFamily: 'Allura', fontSize: 40, color: 'var(--rose-gold)', marginBottom: 16 }}>Ready to Begin?</p>
+          <p style={{ fontFamily: 'PlayfairDisplay', fontSize: 17, color: 'var(--cream-dim)', marginBottom: 36, maxWidth: 480, margin: '0 auto 36px' }}>
+            Your next intentional evening together starts with two small pieces of chocolate.
+          </p>
+          <Link href="/shop" style={{ padding: '18px 48px', background: 'var(--rose-gold)', color: 'var(--espresso)', fontFamily: 'PlayfairDisplay', fontWeight: 700, fontSize: 15, letterSpacing: 2, textTransform: 'uppercase', textDecoration: 'none', borderRadius: 2 }}>
+            Shop the Collection
+          </Link>
+        </div>
       </section>
     </div>
   )

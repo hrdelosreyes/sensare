@@ -58,7 +58,13 @@ export default function RitualPage() {
         padding: '96px 24px 80px', textAlign: 'center',
         background: `radial-gradient(ellipse at center top, rgba(201,144,106,0.07) 0%, transparent 60%), var(--espresso)`,
         borderBottom: '1px solid rgba(201,144,106,0.1)',
+        position: 'relative', overflow: 'hidden',
       }}>
+        {/* Decorative wave — bottom left */}
+        <div style={{ position: 'absolute', bottom: -30, left: -40, width: 380, height: 320, pointerEvents: 'none', opacity: 0.08, filter: 'invert(1) sepia(0.2) brightness(1.5)' }}>
+          <Image src="/Asset 4.png" alt="" fill style={{ objectFit: 'contain' }} />
+        </div>
+        <div style={{ position: 'relative' }}>
         <p style={{ fontFamily: 'Allura', fontSize: 36, color: 'var(--rose-gold)', marginBottom: 12 }}>The Sensarè Ritual</p>
         <h1 style={{ fontFamily: 'PlayfairDisplay', fontWeight: 700, fontStyle: 'italic', fontSize: 'clamp(32px, 5vw, 60px)', color: 'var(--cream)', marginBottom: 24 }}>
           Unwrap. Savor. Ignite.
@@ -69,6 +75,7 @@ export default function RitualPage() {
         <p style={{ fontFamily: 'PlayfairDisplay', fontStyle: 'italic', fontSize: 14, color: 'var(--text-muted)' }}>
           Best practiced 30–60 minutes before intimacy.
         </p>
+        </div>
       </section>
 
       {/* Steps */}

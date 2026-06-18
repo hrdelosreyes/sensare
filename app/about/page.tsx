@@ -23,7 +23,11 @@ export default function AboutPage() {
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 40%, var(--espresso) 100%)' }} />
       </div>
 
-      <section style={{ maxWidth: 740, margin: '0 auto', padding: '72px 24px' }}>
+      <section style={{ maxWidth: 740, margin: '0 auto', padding: '72px 24px', position: 'relative', overflow: 'hidden' }}>
+        {/* Decorative wave — top right of text section */}
+        <div style={{ position: 'absolute', top: 20, right: -80, width: 420, height: 180, pointerEvents: 'none', opacity: 0.07, filter: 'invert(1) sepia(0.2) brightness(1.5)' }}>
+          <Image src="/Asset 2.png" alt="" fill style={{ objectFit: 'contain' }} />
+        </div>
         <p style={{ fontFamily: 'PlayfairDisplay', fontSize: 18, color: 'var(--cream-dim)', lineHeight: 2, marginBottom: 32 }}>
           Sensarè began with a question: <em>Why does intimacy feel like something we schedule instead of something we live?</em>
         </p>
