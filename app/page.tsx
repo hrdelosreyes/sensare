@@ -153,7 +153,7 @@ export default async function HomePage() {
             { name: 'Damiana', desc: 'Traditional herb for sensual energy' },
             { name: 'Maca Root', desc: 'Andean superfood for vitality' },
             { name: 'Ashwagandha', desc: 'Adaptogen for calm arousal' },
-            { name: 'Naturally Sweetened', desc: 'No refined sugar' },
+            { name: 'Ceylon Cinnamon', desc: 'Warming spice, enhances circulation' },
             { name: 'Vegan', desc: 'No dairy, no animal products' },
           ].map(item => (
             <div key={item.name} style={{ padding: '20px 28px', border: '1px solid rgba(201,144,106,0.2)', borderRadius: 2, minWidth: 180, flex: '1 1 180px' }}>
