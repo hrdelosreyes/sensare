@@ -1,7 +1,15 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  async redirects() {
+    return [
+      {
+        source: "/the-ritual",
+        destination: "/pages/the-sensare-ritual",
+        permanent: true,
+      },
+    ];
+  },
 };
 
 export default nextConfig;

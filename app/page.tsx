@@ -55,7 +55,7 @@ export default async function HomePage() {
             <Link href="/shop" style={{ padding: '16px 40px', background: 'var(--rose-gold)', color: 'var(--espresso)', fontFamily: 'PlayfairDisplay', fontWeight: 700, fontSize: 14, letterSpacing: 2, textTransform: 'uppercase', textDecoration: 'none', borderRadius: 2 }}>
               Shop Now
             </Link>
-            <Link href="/the-ritual" style={{ padding: '16px 40px', border: '1px solid rgba(201,144,106,0.5)', color: 'var(--rose-gold-light)', fontFamily: 'PlayfairDisplay', fontSize: 14, letterSpacing: 2, textTransform: 'uppercase', textDecoration: 'none', borderRadius: 2 }}>
+            <Link href="/pages/the-sensare-ritual" style={{ padding: '16px 40px', border: '1px solid rgba(201,144,106,0.5)', color: 'var(--rose-gold-light)', fontFamily: 'PlayfairDisplay', fontSize: 14, letterSpacing: 2, textTransform: 'uppercase', textDecoration: 'none', borderRadius: 2 }}>
               Discover the Ritual
             </Link>
           </div>
@@ -113,7 +113,7 @@ export default async function HomePage() {
           ))}
         </div>
         <div style={{ textAlign: 'center', marginTop: 48 }}>
-          <Link href="/the-ritual" style={{ padding: '14px 36px', border: '1px solid rgba(201,144,106,0.4)', color: 'var(--rose-gold-light)', fontFamily: 'PlayfairDisplay', fontSize: 13, letterSpacing: 2, textTransform: 'uppercase', textDecoration: 'none', borderRadius: 2 }}>
+          <Link href="/pages/the-sensare-ritual" style={{ padding: '14px 36px', border: '1px solid rgba(201,144,106,0.4)', color: 'var(--rose-gold-light)', fontFamily: 'PlayfairDisplay', fontSize: 13, letterSpacing: 2, textTransform: 'uppercase', textDecoration: 'none', borderRadius: 2 }}>
             Experience the Full Ritual
           </Link>
         </div>

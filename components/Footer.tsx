@@ -74,7 +74,7 @@ export default function Footer() {
           <p style={{ fontFamily: 'PlayfairDisplay', fontWeight: 700, fontSize: 12, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--rose-gold)', marginBottom: 16 }}>Explore</p>
           {[
             { href: '/shop', label: 'Shop' },
-            { href: '/the-ritual', label: 'The Ritual' },
+            { href: '/pages/the-sensare-ritual', label: 'The Ritual' },
             { href: '/about', label: 'Our Story' },
             { href: '/faq', label: 'FAQ' },
             { href: '/contact', label: 'Contact' },

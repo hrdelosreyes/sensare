@@ -8,7 +8,7 @@ export default function Navbar() {
 
   const links = [
     { href: '/shop', label: 'Shop' },
-    { href: '/the-ritual', label: 'The Ritual' },
+    { href: '/pages/the-sensare-ritual', label: 'The Ritual' },
     { href: '/about', label: 'Our Story' },
     { href: '/faq', label: 'FAQ' },
   ]
