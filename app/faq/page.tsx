@@ -1,8 +1,10 @@
 import type { Metadata } from 'next'
+import JsonLd from '@/components/JsonLd'
 
 export const metadata: Metadata = {
   title: 'FAQ',
   description: 'Common questions about Sensarè Chocolates — ingredients, usage, shipping, and safety.',
+  alternates: { canonical: '/faq' },
 }
 
 const faqs = [
@@ -44,9 +46,22 @@ const faqs = [
   },
 ]
 
+const faqJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: faqs.flatMap(section =>
+    section.items.map(item => ({
+      '@type': 'Question',
+      name: item.q,
+      acceptedAnswer: { '@type': 'Answer', text: item.a },
+    }))
+  ),
+}
+
 export default function FAQPage() {
   return (
     <div style={{ paddingTop: 72 }}>
+      <JsonLd data={faqJsonLd} />
       <section style={{ padding: '80px 24px 48px', textAlign: 'center', borderBottom: '1px solid rgba(201,144,106,0.1)' }}>
         <p style={{ fontFamily: 'Allura', fontSize: 32, color: 'var(--rose-gold)', marginBottom: 8 }}>Questions?</p>
         <h1 style={{ fontFamily: 'PlayfairDisplay', fontWeight: 700, fontSize: 'clamp(28px, 4vw, 48px)', color: 'var(--cream)', marginBottom: 16 }}>We've Got Answers</h1>

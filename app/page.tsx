@@ -4,6 +4,13 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { supabaseAdmin } from '@/lib/supabase'
 import RestockForm from '@/components/RestockForm'
+import type { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'Aphrodisiac Dark Chocolate for Couples',
+  description: 'Sensarè crafts artisanal Davao dark chocolate infused with ancient botanicals — made for couples to awaken desire, elevate intimacy, and deepen connection.',
+  alternates: { canonical: '/' },
+}
 
 async function getHomeData() {
   const db = supabaseAdmin()

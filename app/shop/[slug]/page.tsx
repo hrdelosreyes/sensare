@@ -3,13 +3,38 @@ import Image from 'next/image'
 import { supabaseAdmin } from '@/lib/supabase'
 import CheckoutButton from '@/components/CheckoutButton'
 import RestockForm from '@/components/RestockForm'
+import JsonLd from '@/components/JsonLd'
+import { absoluteUrl } from '@/lib/seo'
 import type { Metadata } from 'next'
+
+const PRODUCT_IMAGES: Record<string, string> = {
+  'intimate-indulgence': '/images/product-1.png',
+  'ritual-bundle': '/images/product-2.png',
+  'lovers-gift-set': '/images/product-3.png',
+}
+
+function productImage(slug: string): string {
+  return PRODUCT_IMAGES[slug] || '/images/product-1.png'
+}
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params
   const { data } = await supabaseAdmin().from('sensare_products').select('name, description').eq('slug', slug).single()
   if (!data) return {}
-  return { title: data.name, description: data.description }
+  const image = productImage(slug)
+  return {
+    title: data.name,
+    description: data.description,
+    alternates: { canonical: `/shop/${slug}` },
+    openGraph: {
+      type: 'website',
+      title: data.name,
+      description: data.description,
+      url: absoluteUrl(`/shop/${slug}`),
+      images: [{ url: image, alt: data.name }],
+    },
+    twitter: { card: 'summary_large_image', title: data.name, description: data.description, images: [image] },
+  }
 }
 
 const botanicals = [
@@ -38,14 +63,45 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
   const isOutOfStock = product.stock_qty <= 0
   const hasDiscount = product.compare_at_price_php !== null
 
+  const productJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: product.name,
+    description: product.description,
+    image: absoluteUrl(productImage(product.slug)),
+    brand: { '@type': 'Brand', name: 'Sensarè' },
+    category: 'Chocolate',
+    offers: {
+      '@type': 'Offer',
+      url: absoluteUrl(`/shop/${product.slug}`),
+      priceCurrency: 'PHP',
+      price: product.price_php.toFixed(2),
+      availability: isOutOfStock
+        ? 'https://schema.org/OutOfStock'
+        : 'https://schema.org/InStock',
+    },
+  }
+
+  const faqJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: faqs.map(f => ({
+      '@type': 'Question',
+      name: f.q,
+      acceptedAnswer: { '@type': 'Answer', text: f.a },
+    })),
+  }
+
   return (
     <div style={{ paddingTop: 72 }}>
+      <JsonLd data={productJsonLd} />
+      <JsonLd data={faqJsonLd} />
       {/* Product hero */}
       <div style={{ maxWidth: 1100, margin: '0 auto', padding: '64px 24px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 64, alignItems: 'start' }}>
         {/* Image */}
         <div style={{ borderRadius: 4, overflow: 'hidden', position: 'relative', minHeight: 420, border: '1px solid rgba(201,144,106,0.15)' }}>
           <Image
-            src={({ 'intimate-indulgence': '/images/product-1.png', 'ritual-bundle': '/images/product-2.png', 'lovers-gift-set': '/images/product-3.png' } as Record<string,string>)[product.slug] || '/images/product-1.png'}
+            src={productImage(product.slug)}
             alt={product.name} fill style={{ objectFit: 'cover', objectPosition: 'center' }}
           />
           {isOutOfStock && (

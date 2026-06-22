@@ -5,6 +5,7 @@ import type { Metadata } from 'next'
 export const metadata: Metadata = {
   title: 'The Ritual',
   description: 'A five-step intimacy ritual for couples — unwrap, savor, and ignite connection with Sensarè Chocolates.',
+  alternates: { canonical: '/pages/the-sensare-ritual' },
 }
 
 const steps = [

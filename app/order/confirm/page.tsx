@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import type { Metadata } from 'next'
 
-export const metadata: Metadata = { title: 'Order Confirmed' }
+export const metadata: Metadata = { title: 'Order Confirmed', robots: { index: false, follow: false } }
 
 export default async function OrderConfirmPage({ searchParams }: { searchParams: Promise<{ ref?: string }> }) {
   const { ref } = await searchParams

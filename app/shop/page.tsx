@@ -9,6 +9,7 @@ import type { Metadata } from 'next'
 export const metadata: Metadata = {
   title: 'Shop',
   description: 'Artisanal dark chocolate for couples — single bars, bundles, and gift sets infused with ancient botanicals.',
+  alternates: { canonical: '/shop' },
 }
 
 export default async function ShopPage() {

@@ -5,6 +5,7 @@ import type { Metadata } from 'next'
 export const metadata: Metadata = {
   title: 'Our Story',
   description: 'Sensarè was born from a desire to slow down and reconnect. Handcrafted in the Philippines with Davao cacao and ancient botanicals.',
+  alternates: { canonical: '/about' },
 }
 
 export default function AboutPage() {
