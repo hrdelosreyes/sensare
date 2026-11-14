@@ -1,57 +1,47 @@
 import { requireApprovedPartnerPage } from '@/lib/auth'
 import { supabaseAdmin } from '@/lib/supabase'
-import { getLowStockDays, getPartnerStock } from '@/lib/partner-data'
-import { ADJUSTMENT_REASONS, fmtDate } from '@/lib/partner'
+import { getLocations } from '@/lib/partner-data'
+import { getStockPlan, getForecastSettings } from '@/lib/forecast'
+import { ADJUSTMENT_REASONS, fmtDate, locationLabel } from '@/lib/partner'
 import AdjustForm from './AdjustForm'
+import StockTable from '@/components/portal/StockTable'
 
 export default async function InventoryPage() {
   const partner = await requireApprovedPartnerPage()
-  const lowDays = await getLowStockDays()
-  const [stock, { data: moves }] = await Promise.all([
-    getPartnerStock(partner.id, lowDays),
+  const [locations, cfg] = await Promise.all([getLocations(partner.id, false), getForecastSettings()])
+  const [plan, { data: moves }] = await Promise.all([
+    getStockPlan(partner.id, cfg, locations),
     supabaseAdmin().from('sensare_partner_inventory_movements')
-      .select('*, sensare_products(name), sensare_partner_orders(order_number)')
-      .eq('partner_id', partner.id).order('created_at', { ascending: false }).limit(60),
+      .select('*, sensare_products(name), sensare_partner_orders(order_number), sensare_partner_locations(name)')
+      .eq('partner_id', partner.id).order('created_at', { ascending: false }).limit(80),
   ])
+  const multi = locations.filter(l => l.is_active).length > 1
+  const totalOnHand = plan.reduce((s, r) => s + r.on_hand, 0)
 
   return (
     <div className="pp-stack">
       <div>
         <h1 className="pp-h1">Inventory</h1>
-        <p className="pp-muted">Stock is added automatically when an order is delivered and deducted when you record sales.</p>
+        <p className="pp-muted">
+          {totalOnHand.toLocaleString()} boxes on hand{multi ? ` across ${locations.filter(l => l.is_active).length} branches` : ''}.
+          Stock is added when an order is delivered and deducted when you record sales. “Days left” uses your recent sales trend; we suggest a reorder when stock won&apos;t last the {cfg.leadTimeDays}-day delivery lead time plus a {cfg.safetyDays}-day buffer.
+        </p>
       </div>
 
-      <div className="pp-card">
-        {stock.length === 0 ? <p className="pp-empty">No stock yet — it will appear here once your first order is delivered.</p> : (
-          <div className="pp-table-wrap">
-            <table className="pp-table">
-              <thead><tr><th>Product</th><th className="pp-num">On hand (boxes)</th><th className="pp-num">≈ Cases</th><th className="pp-num">Sold, last 14 days</th><th className="pp-num">Avg / day</th><th className="pp-num">Days of stock</th><th>Status</th></tr></thead>
-              <tbody>
-                {stock.map(s => {
-                  const low = s.on_hand === 0 || (s.days_cover !== null && s.days_cover < lowDays)
-                  return (
-                    <tr key={s.product_id}>
-                      <td>{s.product_name}</td>
-                      <td className="pp-num">{s.on_hand}</td>
-                      <td className="pp-num">{(s.on_hand / s.case_size).toFixed(1)}</td>
-                      <td className="pp-num">{s.sold_last_14}</td>
-                      <td className="pp-num">{s.avg_daily.toFixed(1)}</td>
-                      <td className="pp-num">{s.days_cover === null ? '—' : Math.floor(s.days_cover)}</td>
-                      <td>{s.on_hand === 0 ? <span className="pp-badge pp-badge-bad">Out of stock</span> : low ? <span className="pp-badge pp-badge-warn">Reorder soon</span> : <span className="pp-badge pp-badge-ok">OK</span>}</td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
+      {plan.length === 0 ? <div className="pp-card"><p className="pp-empty">No stock yet — it will appear here once your first order is delivered.</p></div> : (
+        locations.filter(l => plan.some(p => p.location_id === l.id)).map(l => (
+          <div key={l.id} className="pp-card">
+            {multi && <p className="pp-h2">{locationLabel(l)}</p>}
+            <StockTable rows={plan.filter(p => p.location_id === l.id)} />
           </div>
-        )}
-      </div>
+        ))
+      )}
 
       <div className="pp-grid-2">
         <div className="pp-card">
           <p className="pp-h2">Remove stock</p>
           <p className="pp-muted" style={{ marginBottom: 16 }}>Record boxes that were damaged, expired, returned to Sensarè, or missing after a stock count.</p>
-          <AdjustForm products={stock.filter(s => s.on_hand > 0).map(s => ({ id: s.product_id, name: s.product_name, onHand: s.on_hand }))} />
+          <AdjustForm options={plan.filter(s => s.on_hand > 0).map(s => ({ key: `${s.location_id}|${s.product_id}`, label: `${multi ? `${s.location_name} — ` : ''}${s.product_name} (${s.on_hand} on hand)` }))} />
         </div>
         <div className="pp-card">
           <p className="pp-h2">Stock history</p>
@@ -63,7 +53,7 @@ export default async function InventoryPage() {
                   {moves.map(m => (
                     <tr key={m.id}>
                       <td>{fmtDate(m.movement_date)}</td>
-                      <td>{m.sensare_products?.name}</td>
+                      <td>{m.sensare_products?.name}{multi && <><br /><span className="pp-muted" style={{ fontSize: 12 }}>{m.sensare_partner_locations?.name}</span></>}</td>
                       <td>
                         {m.movement_type === 'delivery' ? `Delivery ${m.sensare_partner_orders?.order_number ?? ''}` : m.movement_type === 'sale' ? 'Sale' : ADJUSTMENT_REASONS[m.reason] ?? 'Adjustment'}
                         {m.notes && m.movement_type === 'adjustment' && <><br /><span className="pp-muted" style={{ fontSize: 12 }}>{m.notes}</span></>}

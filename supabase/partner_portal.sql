@@ -239,7 +239,8 @@ create table if not exists sensare_partner_inventory_movements (
 create index if not exists sensare_partner_inv_partner_idx on sensare_partner_inventory_movements(partner_id, product_id);
 create unique index if not exists sensare_partner_inv_sale_idx on sensare_partner_inventory_movements(sale_id) where sale_id is not null;
 
-create or replace view sensare_partner_stock
+drop view if exists sensare_partner_stock;
+create view sensare_partner_stock
 with (security_invoker = true) as
 select partner_id, product_id, sum(qty_change)::integer as on_hand
 from sensare_partner_inventory_movements

@@ -12,6 +12,7 @@ const links = [
   { href: '/admin', label: 'Store', exact: true },
   { href: '/admin/partners', label: 'Partners' },
   { href: '/admin/partner-orders', label: 'Partner Orders' },
+  { href: '/admin/consignment', label: 'Consignment' },
   { href: '/admin/partner-reports', label: 'Partner Reports' },
   { href: '/admin/partner-settings', label: 'Partner Settings' },
   { href: '/admin/team', label: 'Team' },

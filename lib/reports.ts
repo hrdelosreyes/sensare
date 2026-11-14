@@ -39,6 +39,7 @@ export type ProductFlow = {
 export type Report = {
   range: ReportRange
   products: ProductFlow[]          // aggregated by product (all partners in scope)
+  locations: (ProductFlow & { location_name: string })[] // by branch (single-partner reports)
   partners: (ProductFlow & { order_value: number; outstanding: number; overdue: number })[] // by partner (admin)
   daily: { sale_date: string; units: number; sales_value: number }[]
   totals: { opening: number; received: number; sold: number; adjusted: number; closing: number; sales_value: number; sell_through: number | null }
@@ -52,7 +53,7 @@ export type Report = {
 const sellThrough = (sold: number, opening: number, received: number) =>
   opening + received > 0 ? sold / (opening + received) : null
 
-export async function buildReport(partnerId: string | null, range: ReportRange): Promise<Report> {
+export async function buildReport(partnerId: string | null, range: ReportRange, locationId: string | null = null): Promise<Report> {
   const db = supabaseAdmin()
   let ordersQ = db.from('sensare_partner_orders')
     .select('*, sensare_partners(business_name), sensare_partner_order_items(case_qty)')
@@ -62,15 +63,17 @@ export async function buildReport(partnerId: string | null, range: ReportRange):
     .order('created_at', { ascending: false })
     .limit(1000)
   if (partnerId) ordersQ = ordersQ.eq('partner_id', partnerId)
+  if (locationId) ordersQ = ordersQ.eq('location_id', locationId)
 
   // Outstanding balances are as of today, regardless of the date range.
   let openQ = db.from('sensare_partner_orders').select('partner_id, total_php, amount_paid_php, due_date, payment_status, status')
     .neq('status', 'cancelled').neq('payment_status', 'paid').limit(5000)
   if (partnerId) openQ = openQ.eq('partner_id', partnerId)
+  if (locationId) openQ = openQ.eq('location_id', locationId)
 
   const [{ data: flow, error: flowErr }, { data: daily }, { data: products }, { data: partners }, { data: orders }, { data: open }] = await Promise.all([
-    db.rpc('sensare_partner_report', { p_partner_id: partnerId, p_from: range.from, p_to: range.to }),
-    db.rpc('sensare_partner_report_daily', { p_partner_id: partnerId, p_from: range.from, p_to: range.to }),
+    db.rpc('sensare_partner_report', { p_partner_id: partnerId, p_location_id: locationId, p_from: range.from, p_to: range.to }),
+    db.rpc('sensare_partner_report_daily', { p_partner_id: partnerId, p_location_id: locationId, p_from: range.from, p_to: range.to }),
     db.from('sensare_products').select('id, name, sort_order').order('sort_order'),
     partnerId ? Promise.resolve({ data: [] as { id: string; business_name: string }[] }) : db.from('sensare_partners').select('id, business_name'),
     ordersQ,
@@ -82,7 +85,7 @@ export async function buildReport(partnerId: string | null, range: ReportRange):
   const productOrder = new Map((products ?? []).map((p, i) => [p.id as string, i]))
   const partnerName = new Map((partners ?? []).map(p => [p.id as string, p.business_name as string]))
 
-  type Row = { partner_id: string; product_id: string; opening: number; received: number; sold: number; adjusted: number; closing: number; sales_value: number }
+  type Row = { partner_id: string; location_id: string; product_id: string; opening: number; received: number; sold: number; adjusted: number; closing: number; sales_value: number }
   const rows = ((flow ?? []) as Row[]).map(r => ({ ...r, sales_value: Number(r.sales_value) }))
 
   const sum = (rs: Row[], key: string, name: string, extra: Partial<ProductFlow> = {}): ProductFlow => {
@@ -126,6 +129,15 @@ export async function buildReport(partnerId: string | null, range: ReportRange):
     overdue: outstandingBy.get(pid)?.overdue ?? 0,
   })).sort((a, b) => b.sales_value - a.sales_value || b.sold - a.sold)
 
+  let locationRows: Report['locations'] = []
+  if (partnerId) {
+    const { data: locs } = await db.from('sensare_partner_locations').select('id, name').eq('partner_id', partnerId)
+    const ln = new Map((locs ?? []).map(l => [l.id as string, l.name as string]))
+    locationRows = [...group(r => r.location_id).entries()]
+      .map(([lid, rs]) => ({ ...sum(rs, lid, ''), location_name: ln.get(lid) ?? 'Branch' }))
+      .sort((a, b) => b.sold - a.sold)
+  }
+
   const totals = sum(rows, '', '')
   const byTerms = { cod: { count: 0, value: 0, outstanding: 0 }, consignment: { count: 0, value: 0, outstanding: 0 }, net30: { count: 0, value: 0, outstanding: 0 } }
   for (const o of orderList) {
@@ -139,6 +151,7 @@ export async function buildReport(partnerId: string | null, range: ReportRange):
   return {
     range,
     products: productRows,
+    locations: locationRows,
     partners: partnerRows,
     daily: ((daily ?? []) as { sale_date: string; units: number; sales_value: number }[]).map(d => ({ ...d, sales_value: Number(d.sales_value) })),
     totals: { opening: totals.opening, received: totals.received, sold: totals.sold, adjusted: totals.adjusted, closing: totals.closing, sales_value: totals.sales_value, sell_through: totals.sell_through },
@@ -186,6 +199,12 @@ export function reportCsv(report: Report, kind: string): { filename: string; csv
         csv: toCsv(['Order', 'Date', 'Partner', 'Status', 'Terms', 'Cases', 'Total (PHP)', 'Paid (PHP)', 'Balance (PHP)', 'Due date'],
           report.orders.list.map(o => [o.order_number, o.created_at.slice(0, 10), o.partner_name ?? '', o.status, o.payment_terms, o.cases,
             Number(o.total_php).toFixed(2), Number(o.amount_paid_php).toFixed(2), balance(o).toFixed(2), o.due_date ?? ''])),
+      }
+    case 'branches':
+      return {
+        filename: `sensare-sales-by-branch_${tag}.csv`,
+        csv: toCsv(['Branch', 'Opening stock', 'Received', 'Sold', 'Adjusted', 'Closing stock', 'Sell-through %', 'Sales value (PHP)'],
+          report.locations.map(p => [p.location_name, p.opening, p.received, p.sold, p.adjusted, p.closing, pct(p.sell_through), p.sales_value.toFixed(2)])),
       }
     case 'partners':
       return {

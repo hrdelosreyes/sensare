@@ -6,6 +6,8 @@ import { supabaseAdmin } from '@/lib/supabase'
 import { supabaseAuth } from '@/lib/supabase-server'
 import { getAdmin, requireAdmin } from '@/lib/auth'
 import { email } from '@/lib/email'
+import { cancelPendingOnlineSettlements, createSettlement, getConsignmentState } from '@/lib/consignment'
+import { refreshSuggestion } from '@/lib/forecast'
 import { addDays, isIsoDate, isPaymentTerms, manilaToday, ADJUSTMENT_REASONS, PAYMENT_METHOD, type PartnerOrder, type PaymentMethod } from '@/lib/partner'
 
 export type FormState = { error?: string; ok?: string } | undefined
@@ -68,7 +70,10 @@ export async function updatePartnerAdminAction(_prev: FormState, fd: FormData): 
   if (!isPaymentTerms(terms)) return { error: 'Choose default payment terms.' }
   const business_name = str(fd, 'business_name', 200)
   if (!business_name) return { error: 'Business name is required.' }
+  const period = Math.floor(Number(fd.get('consignment_period_days') || 7))
+  if (!(period >= 1 && period <= 90)) return { error: 'Settlement period must be 1–90 days.' }
   const { error } = await supabaseAdmin().from('sensare_partners').update({
+    consignment_period_days: period,
     default_payment_terms: terms,
     business_name,
     tin: str(fd, 'tin', 50) || null,
@@ -103,8 +108,10 @@ export async function adminAdjustInventoryAction(_prev: FormState, fd: FormData)
   const reason = str(fd, 'reason', 50)
   if (!qty) return { error: 'Enter a non-zero quantity (use a minus sign to remove).' }
   if (!(reason in ADJUSTMENT_REASONS)) return { error: 'Choose a reason.' }
+  const [locationId, productId] = str(fd, 'stock_key', 80).split('|')
+  if (!locationId || !productId) return { error: 'Choose a branch and product.' }
   const { error } = await supabaseAdmin().rpc('sensare_partner_adjust_inventory', {
-    p_partner_id: partnerId, p_product_id: str(fd, 'product_id', 64), p_qty_change: qty, p_reason: reason,
+    p_partner_id: partnerId, p_location_id: locationId, p_product_id: productId, p_qty_change: qty, p_reason: reason,
     p_notes: str(fd, 'notes', 500) || null, p_batch: null, p_expiry: null, p_user_id: admin.user_id,
   })
   if (error) return { error: errMsg(error) }
@@ -217,7 +224,7 @@ export async function reviewPaymentAction(fd: FormData) {
   if (decision !== 'confirmed' && decision !== 'rejected') return
   const db = supabaseAdmin()
   const { data: payment } = await db.from('sensare_partner_payments').select('*').eq('id', paymentId).single()
-  if (!payment || payment.status !== 'pending') return
+  if (!payment || payment.status !== 'pending' || payment.settlement_id) return
   await db.from('sensare_partner_payments').update({
     status: decision, confirmed_by: admin.user_id, confirmed_at: new Date().toISOString(),
   }).eq('id', paymentId)
@@ -293,11 +300,17 @@ export async function changeOwnPasswordAction(_prev: FormState, fd: FormData): P
 export async function saveSettingsAction(_prev: FormState, fd: FormData): Promise<FormState> {
   await requireAdmin()
   const db = supabaseAdmin()
-  const lowDays = Math.floor(Number(fd.get('partner_low_stock_days')))
-  if (!(lowDays >= 1 && lowDays <= 90)) return { error: 'Low-stock days must be between 1 and 90.' }
+  const n = (k: string) => Math.floor(Number(fd.get(k)))
+  const lead = n('partner_lead_time_days'), cover = n('partner_cover_days'), safety = n('partner_safety_days')
+  if (!(lead >= 1 && lead <= 90)) return { error: 'Lead time must be 1–90 days.' }
+  if (!(cover >= 1 && cover <= 120)) return { error: 'Order cover must be 1–120 days.' }
+  if (!(safety >= 0 && safety <= 60)) return { error: 'Safety buffer must be 0–60 days.' }
+  const now = new Date().toISOString()
   const { error } = await db.from('sensare_settings').upsert([
-    { key: 'partner_bank_details', value: str(fd, 'partner_bank_details', 2000), updated_at: new Date().toISOString() },
-    { key: 'partner_low_stock_days', value: String(lowDays), updated_at: new Date().toISOString() },
+    { key: 'partner_bank_details', value: str(fd, 'partner_bank_details', 2000), updated_at: now },
+    { key: 'partner_lead_time_days', value: String(lead), updated_at: now },
+    { key: 'partner_cover_days', value: String(cover), updated_at: now },
+    { key: 'partner_safety_days', value: String(safety), updated_at: now },
   ])
   if (error) return { error: errMsg(error) }
 
@@ -313,4 +326,59 @@ export async function saveSettingsAction(_prev: FormState, fd: FormData): Promis
   }
   revalidatePath('/admin', 'layout')
   return { ok: 'Settings saved.' }
+}
+
+// ---------------------------------------------------------------- Consignment
+
+export async function reviewSettlementAction(fd: FormData) {
+  const admin = await requireAdmin()
+  const id = str(fd, 'settlement_id', 64)
+  const decision = str(fd, 'decision', 20)
+  if (decision !== 'confirmed' && decision !== 'rejected') return
+  const db = supabaseAdmin()
+  const { data: st } = await db.from('sensare_partner_consignment_settlements').select('*, sensare_partners(email)').eq('id', id).single()
+  if (!st || st.status !== 'pending' || st.method === 'hitpay') return
+  // Payments follow via the settlement status trigger.
+  await db.from('sensare_partner_consignment_settlements').update({
+    status: decision, confirmed_by: admin.user_id, confirmed_at: new Date().toISOString(),
+  }).eq('id', id)
+  if (decision === 'confirmed' && st.sensare_partners) {
+    await email.settlementConfirmed(st.sensare_partners, Number(st.amount_php), st.period_from, st.period_to)
+  }
+  revalidatePath('/admin', 'layout')
+}
+
+export async function recordSettlementAction(_prev: FormState, fd: FormData): Promise<FormState> {
+  const admin = await requireAdmin()
+  const partnerId = str(fd, 'partner_id', 64)
+  const to = str(fd, 'period_to', 10)
+  const method = str(fd, 'method', 20)
+  if (!['cash', 'check', 'bank_transfer', 'other'].includes(method)) return { error: 'Choose a payment method.' }
+  const { data: partner } = await supabaseAdmin().from('sensare_partners').select('*').eq('id', partnerId).single()
+  if (!partner) return { error: 'Partner not found.' }
+  await cancelPendingOnlineSettlements(partnerId)
+  const state = await getConsignmentState(partner)
+  if (!state.nextFrom) return { error: 'Nothing to settle for this partner.' }
+  if (!isIsoDate(to) || to < state.nextFrom || to > manilaToday()) return { error: 'Choose a valid period end date.' }
+  const paidOn = str(fd, 'paid_on', 10)
+  const res = await createSettlement({
+    partnerId, from: state.nextFrom, to, method, status: 'confirmed',
+    reference: str(fd, 'reference', 100) || null, notes: str(fd, 'notes', 500) || null,
+    paidOn: isIsoDate(paidOn) ? paidOn : manilaToday(), userId: admin.user_id,
+  })
+  if (res.error) return { error: res.error }
+  if (fd.get('notify') === 'on') {
+    const { data: st } = await supabaseAdmin().from('sensare_partner_consignment_settlements').select('amount_php').eq('id', res.id!).single()
+    await email.settlementConfirmed(partner, Number(st?.amount_php ?? 0), state.nextFrom, to)
+  }
+  revalidatePath('/admin', 'layout')
+  return { ok: 'Settlement recorded.' }
+}
+
+export async function generateSuggestionAction(fd: FormData) {
+  await requireAdmin()
+  const { data: partner } = await supabaseAdmin().from('sensare_partners').select('*').eq('id', str(fd, 'partner_id', 64)).single()
+  if (!partner) return
+  await refreshSuggestion(partner, fd.get('notify') === 'on')
+  revalidatePath(`/admin/partners/${partner.id}`)
 }

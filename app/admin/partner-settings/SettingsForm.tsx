@@ -3,8 +3,9 @@ import { useActionState } from 'react'
 import { saveSettingsAction } from '../actions'
 import { FormMessage, SubmitButton } from '@/components/portal/forms'
 import { peso, type Product } from '@/lib/partner'
+import type { ForecastSettings } from '@/lib/forecast-math'
 
-export default function SettingsForm({ bank, lowDays, products }: { bank: string; lowDays: number; products: Product[] }) {
+export default function SettingsForm({ bank, forecast, products }: { bank: string; forecast: ForecastSettings; products: Product[] }) {
   const [state, action] = useActionState(saveSettingsAction, undefined)
   return (
     <form action={action} className="pp-stack">
@@ -36,9 +37,16 @@ export default function SettingsForm({ bank, lowDays, products }: { bank: string
               placeholder={'Bank: BDO\nAccount name: Sensarè Chocolates\nAccount no.: 0000 0000 0000'} /></label>
         </div>
         <div className="pp-card">
-          <label className="pp-field"><span className="pp-label">Low-stock warning (days of cover)</span>
-            <input className="pp-input" name="partner_low_stock_days" type="number" min={1} max={90} defaultValue={lowDays} style={{ maxWidth: 120 }} />
-            <span className="pp-hint">Partners get a reorder suggestion when a product will run out within this many days, based on their last 14 days of sales.</span></label>
+          <p className="pp-h3">Automatic reorder suggestions</p>
+          <div className="pp-grid" style={{ gap: '0 16px', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))' }}>
+            <label className="pp-field"><span className="pp-label">Lead time (days)</span>
+              <input className="pp-input" name="partner_lead_time_days" type="number" min={1} max={90} defaultValue={forecast.leadTimeDays} /></label>
+            <label className="pp-field"><span className="pp-label">Order covers (days)</span>
+              <input className="pp-input" name="partner_cover_days" type="number" min={1} max={120} defaultValue={forecast.coverDays} /></label>
+            <label className="pp-field"><span className="pp-label">Safety buffer (days)</span>
+              <input className="pp-input" name="partner_safety_days" type="number" min={0} max={60} defaultValue={forecast.safetyDays} /></label>
+          </div>
+          <p className="pp-hint">Each day the system forecasts every branch&apos;s daily sales from the last 4 weeks (recent weeks weigh more; rising sales are followed at once). It suggests a reorder when stock + orders on the way won&apos;t last lead time + safety buffer, and orders enough to last lead time + cover + buffer, in whole cases. Partners approve or adjust it.</p>
         </div>
       </div>
       <div><SubmitButton>Save settings</SubmitButton></div>

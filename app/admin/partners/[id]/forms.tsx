@@ -51,6 +51,9 @@ export function PartnerAdminForm({ partner }: { partner: Partner }) {
       <label className="pp-field"><span className="pp-label">Default payment terms</span>
         <TermsSelect value={partner.default_payment_terms} />
         <span className="pp-hint">Pre-selected on new orders. You can change terms on any individual order.</span></label>
+      <label className="pp-field"><span className="pp-label">Consignment settlement period (days)</span>
+        <input className="pp-input" name="consignment_period_days" type="number" min={1} max={90} defaultValue={partner.consignment_period_days ?? 7} style={{ maxWidth: 120 }} />
+        <span className="pp-hint">How often this partner pays for consignment boxes sold. Default 7.</span></label>
       <label className="pp-field"><span className="pp-label">Internal notes (not visible to partner)</span>
         <textarea className="pp-textarea" name="admin_notes" defaultValue={partner.admin_notes ?? ''} maxLength={2000} /></label>
       <SubmitButton>Save</SubmitButton>
@@ -89,15 +92,15 @@ export function PriceListForm({ partnerId, items }: { partnerId: string; items: 
   )
 }
 
-export function AdminAdjustForm({ partnerId, products }: { partnerId: string; products: { id: string; name: string }[] }) {
+export function AdminAdjustForm({ partnerId, options }: { partnerId: string; options: { key: string; label: string }[] }) {
   const [state, action] = useActionState(adminAdjustInventoryAction, undefined)
   return (
     <form action={action}>
       <input type="hidden" name="partner_id" value={partnerId} />
       <FormMessage state={state} />
       <div className="pp-grid-2" style={{ gap: '0 12px' }}>
-        <label className="pp-field"><span className="pp-label">Product</span>
-          <select className="pp-select" name="product_id">{products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select></label>
+        <label className="pp-field"><span className="pp-label">Branch & product</span>
+          <select className="pp-select" name="stock_key">{options.map(o => <option key={o.key} value={o.key}>{o.label}</option>)}</select></label>
         <label className="pp-field"><span className="pp-label">Boxes (+ add / − remove)</span>
           <input className="pp-input" name="qty" type="number" step={1} required /></label>
         <label className="pp-field"><span className="pp-label">Reason</span>

@@ -10,13 +10,13 @@ const FILTERS: { key: string; label: string }[] = [
   { key: 'delivered', label: 'Delivered' }, { key: 'cancelled', label: 'Cancelled' }, { key: 'all', label: 'All' },
 ]
 
-type Row = PartnerOrder & { sensare_partners: { business_name: string } | null; sensare_partner_payments: { status: string }[] }
+type Row = PartnerOrder & { sensare_partners: { business_name: string } | null; sensare_partner_payments: { status: string; settlement_id: string | null }[]; sensare_partner_locations: { name: string } | null }
 
 export default async function AdminPartnerOrdersPage({ searchParams }: { searchParams: Promise<{ f?: string }> }) {
   await requireAdminPage()
   const f = (await searchParams).f ?? 'open'
   const { data } = await supabaseAdmin().from('sensare_partner_orders')
-    .select('*, sensare_partners(business_name), sensare_partner_payments(status)')
+    .select('*, sensare_partners(business_name), sensare_partner_payments(status, settlement_id), sensare_partner_locations(name)')
     .order('created_at', { ascending: false }).limit(1000)
   const orders = (data ?? []) as Row[]
 
@@ -31,7 +31,7 @@ export default async function AdminPartnerOrdersPage({ searchParams }: { searchP
   }
   const shown = orders.filter(match)
   const active = orders.filter(o => o.status !== 'cancelled')
-  const toVerify = orders.filter(o => o.sensare_partner_payments.some(p => p.status === 'pending' && o.status !== 'cancelled'))
+  const toVerify = orders.filter(o => o.sensare_partner_payments.some(p => p.status === 'pending' && !p.settlement_id && o.status !== 'cancelled'))
 
   return (
     <div className="pp-stack">
@@ -55,12 +55,12 @@ export default async function AdminPartnerOrdersPage({ searchParams }: { searchP
         {shown.length === 0 ? <p className="pp-empty">No orders here.</p> : (
           <div className="pp-table-wrap">
             <table className="pp-table">
-              <thead><tr><th>Order</th><th>Partner</th><th>Date</th><th>Status</th><th>Terms</th><th>Payment</th><th>Due</th><th className="pp-num">Total</th><th className="pp-num">Balance</th></tr></thead>
+              <thead><tr><th>Order</th><th>Partner / branch</th><th>Date</th><th>Status</th><th>Terms</th><th>Payment</th><th>Due</th><th className="pp-num">Total</th><th className="pp-num">Balance</th></tr></thead>
               <tbody>
                 {shown.map(o => (
                   <tr key={o.id}>
                     <td><Link className="pp-link" href={`/admin/partner-orders/${o.id}`}>{o.order_number}</Link></td>
-                    <td>{o.sensare_partners?.business_name}</td>
+                    <td>{o.sensare_partners?.business_name}<br /><span className="pp-muted" style={{ fontSize: 12 }}>{o.sensare_partner_locations?.name}</span></td>
                     <td>{fmtDate(o.created_at)}</td>
                     <td><OrderStatusBadge status={o.status} /></td>
                     <td>{PAYMENT_TERMS[o.payment_terms]}</td>

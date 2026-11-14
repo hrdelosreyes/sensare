@@ -7,18 +7,22 @@ import { fmtDate } from '@/lib/partner'
 
 type Row = { id: string; name: string; srp: number; onHand: number; units: number | null; price: number | null }
 
-export default function SalesForm({ date, today, minDate, rows }: { date: string; today: string; minDate: string; rows: Row[] }) {
+export default function SalesForm({ date, today, minDate, rows, locationId, locationName, locked }: {
+  date: string; today: string; minDate: string; rows: Row[]; locationId: string; locationName: string | null; locked: boolean
+}) {
   const [state, action] = useActionState(saveSalesAction, undefined)
   const router = useRouter()
 
   return (
     <form action={action}>
+      <input type="hidden" name="location_id" value={locationId} />
       <div className="pp-row" style={{ justifyContent: 'space-between', marginBottom: 16 }}>
-        <p className="pp-h2" style={{ marginBottom: 0 }}>Sales for {fmtDate(date)}</p>
+        <p className="pp-h2" style={{ marginBottom: 0 }}>{locationName ? `${locationName} · ` : ''}{fmtDate(date)}</p>
         <input className="pp-input" type="date" name="sale_date" value={date} min={minDate} max={today} style={{ width: 'auto' }}
-          onChange={e => e.target.value && router.push(`/partners/portal/sales?date=${e.target.value}`)} aria-label="Sales date" />
+          onChange={e => e.target.value && router.push(`/partners/portal/sales?date=${e.target.value}&loc=${locationId}`)} aria-label="Sales date" />
       </div>
       <FormMessage state={state} />
+      <fieldset disabled={locked} style={{ border: 'none' }}>
       <div className="pp-table-wrap">
         <table className="pp-table">
           <thead><tr><th>Product</th><th className="pp-num">In stock</th><th>Boxes sold</th><th>Price / box</th></tr></thead>
@@ -40,6 +44,7 @@ export default function SalesForm({ date, today, minDate, rows }: { date: string
       <label className="pp-field"><span className="pp-label">Notes</span>
         <input className="pp-input" name="notes" maxLength={500} placeholder="Optional — e.g. weekend bazaar" /></label>
       <SubmitButton>Save sales</SubmitButton>
+      </fieldset>
     </form>
   )
 }

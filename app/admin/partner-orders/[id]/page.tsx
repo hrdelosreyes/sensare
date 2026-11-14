@@ -17,10 +17,12 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ id:
   if (!data) notFound()
   const order = data as PartnerOrder & { sensare_partners: Partner }
   const partner = order.sensare_partners
-  const [{ data: items }, { data: payments }, { data: products }] = await Promise.all([
+  const [{ data: items }, { data: payments }, { data: products }, { data: location }, { data: siblings }] = await Promise.all([
     db.from('sensare_partner_order_items').select('*').eq('order_id', id),
     db.from('sensare_partner_payments').select('*').eq('order_id', id).order('created_at', { ascending: false }),
     db.from('sensare_products').select('id, stock_qty'),
+    db.from('sensare_partner_locations').select('*').eq('id', order.location_id).maybeSingle(),
+    db.from('sensare_partner_orders').select('id, order_number, status, sensare_partner_locations(name)').eq('order_group_id', order.order_group_id).neq('id', order.id),
   ])
   const stockBy = new Map((products ?? []).map(p => [p.id as string, Number(p.stock_qty)]))
   const its = (items ?? []) as OrderItem[]
@@ -70,7 +72,13 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ id:
             </table>
           </div>
           <dl className="pp-dl" style={{ marginTop: 20 }}>
-            <dt>Deliver to</dt><dd>{order.shipping_address || '—'}</dd>
+            <dt>Branch</dt><dd>{location?.name ?? '—'}</dd>
+            <dt>Deliver to</dt><dd style={{ whiteSpace: 'pre-line' }}>{order.shipping_address || '—'}</dd>
+            {(siblings?.length ?? 0) > 0 && <><dt>Same request</dt><dd>{siblings!.map((x, i) => {
+              const ln = x.sensare_partner_locations as unknown as { name: string } | null
+              return <span key={x.id}>{i > 0 && ', '}<Link className="pp-link" href={`/admin/partner-orders/${x.id}`}>{x.order_number}</Link>{ln ? ` (${ln.name})` : ''}</span>
+            })}</dd></>}
+            {order.suggestion_id && <><dt>Source</dt><dd>Approved from an automatic suggestion</dd></>}
             <dt>Partner notes</dt><dd>{order.partner_notes || '—'}</dd>
             <dt>Terms</dt><dd>{PAYMENT_TERMS[order.payment_terms]}{order.payment_terms !== partner.default_payment_terms && <span className="pp-badge pp-badge-warn" style={{ marginLeft: 8 }}>Differs from default ({PAYMENT_TERMS[partner.default_payment_terms]})</span>}</dd>
             <dt>Due date</dt><dd>{fmtDate(order.due_date)}</dd>
@@ -107,7 +115,8 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ id:
                     <td><span className={`pp-badge ${p.status === 'confirmed' ? 'pp-badge-ok' : p.status === 'pending' ? 'pp-badge-warn' : 'pp-badge-bad'}`}>{p.status}</span></td>
                     <td className="pp-num">{peso(p.amount_php)}</td>
                     <td>
-                      {p.status === 'pending' && p.method !== 'hitpay' && (
+                      {p.settlement_id && <Link className="pp-link" style={{ fontSize: 12 }} href="/admin/consignment">Consignment settlement</Link>}
+                      {p.status === 'pending' && p.method !== 'hitpay' && !p.settlement_id && (
                         <div className="pp-row" style={{ gap: 6 }}>
                           <form action={reviewPaymentAction}><input type="hidden" name="payment_id" value={p.id} /><input type="hidden" name="decision" value="confirmed" />
                             <ConfirmButton message={`Confirm ${peso(p.amount_php)} was received?`}>Confirm</ConfirmButton></form>
@@ -115,7 +124,7 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ id:
                             <ConfirmButton className="pp-btn pp-btn-sm pp-btn-danger" message="Reject this payment report?">Reject</ConfirmButton></form>
                         </div>
                       )}
-                      {p.status === 'pending' && p.method === 'hitpay' && <span className="pp-muted" style={{ fontSize: 12 }}>Awaiting HitPay</span>}
+                      {p.status === 'pending' && p.method === 'hitpay' && !p.settlement_id && <span className="pp-muted" style={{ fontSize: 12 }}>Awaiting HitPay</span>}
                     </td>
                   </tr>
                 ))}

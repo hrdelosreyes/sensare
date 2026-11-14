@@ -3,6 +3,8 @@ import { createHmac } from 'crypto'
 import { supabaseAdmin } from '@/lib/supabase'
 import { Resend } from 'resend'
 import { PARTNER_REF_PREFIX } from '@/lib/hitpay'
+import { SETTLEMENT_REF_PREFIX } from '@/lib/consignment'
+import { manilaToday } from '@/lib/partner'
 import { email } from '@/lib/email'
 
 function verifySignature(payload: string, signature: string): boolean {
@@ -27,6 +29,10 @@ export async function POST(req: NextRequest) {
   // Partner (wholesale) order payments
   if (refNum.startsWith(PARTNER_REF_PREFIX)) {
     return handlePartnerPayment(refNum, status, paymentId)
+  }
+  // Partner consignment settlements
+  if (refNum.startsWith(SETTLEMENT_REF_PREFIX)) {
+    return handleSettlementPayment(refNum, status, paymentId)
   }
 
   if (status !== 'completed') {
@@ -92,7 +98,7 @@ async function handlePartnerPayment(refNum: string, status: string, paymentId: s
   await db.from('sensare_partner_payments').update({
     status: 'confirmed',
     confirmed_at: new Date().toISOString(),
-    paid_on: new Date().toISOString().slice(0, 10),
+    paid_on: manilaToday(),
     notes: paymentId ? `HitPay payment ${paymentId}` : payment.notes,
   }).eq('id', payment.id)
 
@@ -101,5 +107,33 @@ async function handlePartnerPayment(refNum: string, status: string, paymentId: s
     db.from('sensare_partners').select('email').eq('id', payment.partner_id).single(),
   ])
   if (order && partner) await email.paymentConfirmed(order, partner, Number(payment.amount_php))
+  return NextResponse.json({ ok: true })
+}
+
+async function handleSettlementPayment(refNum: string, status: string, paymentId: string) {
+  const db = supabaseAdmin()
+  const { data: st } = await db.from('sensare_partner_consignment_settlements')
+    .select('*').eq('reference', refNum).eq('method', 'hitpay').maybeSingle()
+  if (!st) return NextResponse.json({ error: 'Settlement not found' }, { status: 404 })
+  if (st.status === 'confirmed') return NextResponse.json({ ok: true }) // idempotent
+
+  // Status change cascades to the settlement's order payments (DB trigger).
+  if (status !== 'completed') {
+    await db.from('sensare_partner_consignment_settlements').update({ status: 'failed' }).eq('id', st.id)
+    return NextResponse.json({ ok: true })
+  }
+  if (st.status !== 'pending') {
+    // Paid after the checkout expired: money is real, so record it, but flag it —
+    // the partner may have settled the same period again since.
+    console.error('Late HitPay settlement payment', st.id)
+    await email.lateSettlementPayment(st.id, Number(st.amount_php))
+  }
+  await db.from('sensare_partner_consignment_settlements').update({
+    status: 'confirmed', confirmed_at: new Date().toISOString(), paid_on: manilaToday(),
+    hitpay_payment_id: paymentId || st.hitpay_payment_id,
+  }).eq('id', st.id)
+
+  const { data: partner } = await db.from('sensare_partners').select('email').eq('id', st.partner_id).single()
+  if (partner) await email.settlementConfirmed(partner, Number(st.amount_php), st.period_from, st.period_to)
   return NextResponse.json({ ok: true })
 }

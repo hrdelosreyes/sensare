@@ -2,8 +2,11 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { requireAdminPage } from '@/lib/auth'
 import { supabaseAdmin } from '@/lib/supabase'
-import { getLowStockDays, getPartnerCatalog, getPartnerStock } from '@/lib/partner-data'
-import { balance, BUSINESS_TYPES, fmtDate, isOverdue, peso, PAYMENT_TERMS, type Partner, type PartnerOrder } from '@/lib/partner'
+import { getLocations, getPartnerCatalog } from '@/lib/partner-data'
+import { getStockPlan } from '@/lib/forecast'
+import StockTable from '@/components/portal/StockTable'
+import { generateSuggestionAction } from '../../actions'
+import { balance, BUSINESS_TYPES, fmtDate, isOverdue, locationAddress, locationLabel, peso, PAYMENT_TERMS, type Partner, type PartnerOrder } from '@/lib/partner'
 import { OrderStatusBadge, PartnerStatusBadge, PaymentStatusBadge, Stat } from '@/components/portal/ui'
 import { StatusForm, PartnerAdminForm, PriceListForm, AdminAdjustForm } from './forms'
 
@@ -15,12 +18,16 @@ export default async function AdminPartnerPage({ params }: { params: Promise<{ i
   if (!data) notFound()
   const partner = data as Partner
 
-  const lowDays = await getLowStockDays()
-  const [catalog, stock, { data: ordersData }] = await Promise.all([
+  const locations = await getLocations(partner.id, false)
+  const [catalog, stock, { data: ordersData }, { data: suggestion }] = await Promise.all([
     getPartnerCatalog(partner.id, true),
-    getPartnerStock(partner.id, lowDays),
+    getStockPlan(partner.id, undefined, locations),
     db.from('sensare_partner_orders').select('*').eq('partner_id', partner.id).order('created_at', { ascending: false }).limit(200),
+    db.from('sensare_partner_order_suggestions').select('id, generated_at, notified_at, sensare_partner_order_suggestion_lines(suggested_cases, location_id)')
+      .eq('partner_id', partner.id).eq('status', 'open').maybeSingle(),
   ])
+  const locName = new Map(locations.map(l => [l.id, locationLabel(l)]))
+  const sugCases = (suggestion?.sensare_partner_order_suggestion_lines ?? []).reduce((t, l) => t + l.suggested_cases, 0)
   const orders = (ordersData ?? []) as PartnerOrder[]
   const active = orders.filter(o => o.status !== 'cancelled')
   const outstanding = active.reduce((s, o) => s + balance(o), 0)
@@ -41,7 +48,7 @@ export default async function AdminPartnerPage({ params }: { params: Promise<{ i
 
       {partner.status === 'approved' && (
         <div className="pp-grid">
-          <Stat label="Units on hand" value={stock.reduce((s, r) => s + r.on_hand, 0)} />
+          <Stat label="Boxes on hand" value={stock.reduce((t, r) => t + r.on_hand, 0)} sub={`${locations.filter(l => l.is_active).length} branch(es)`} />
           <Stat label="Orders" value={active.length} sub={`${peso(active.reduce((s, o) => s + Number(o.total_php), 0), 0)} total`} />
           <Stat label="Outstanding" value={peso(outstanding, 0)} sub={overdue ? `${peso(overdue, 0)} overdue` : undefined} />
         </div>
@@ -79,19 +86,41 @@ export default async function AdminPartnerPage({ params }: { params: Promise<{ i
         }))} />
       </div>
 
+      <div className="pp-card">
+        <p className="pp-h2">Inventory by branch</p>
+        {stock.length === 0 ? <p className="pp-empty">No stock yet.</p> : locations.filter(l => stock.some(x => x.location_id === l.id)).map(l => (
+          <div key={l.id} style={{ marginBottom: 16 }}>
+            {locations.length > 1 && <p className="pp-h3">{locName.get(l.id)}</p>}
+            <StockTable rows={stock.filter(x => x.location_id === l.id)} />
+          </div>
+        ))}
+        <p className="pp-h3" style={{ marginTop: 12 }}>Adjust stock</p>
+        <AdminAdjustForm partnerId={partner.id} options={locations.filter(l => l.is_active).flatMap(l => catalog.map(c => ({ key: `${l.id}|${c.id}`, label: `${locations.length > 1 ? `${locName.get(l.id)} — ` : ''}${c.name}` })))} />
+      </div>
+
       <div className="pp-grid-2">
         <div className="pp-card">
-          <p className="pp-h2">Inventory</p>
-          {stock.length === 0 ? <p className="pp-empty">No stock yet.</p> : (
-            <table className="pp-table">
-              <thead><tr><th>Product</th><th className="pp-num">On hand</th><th className="pp-num">Sold 14d</th><th className="pp-num">Days left</th></tr></thead>
-              <tbody>{stock.map(s => (
-                <tr key={s.product_id}><td>{s.product_name}</td><td className="pp-num">{s.on_hand}</td><td className="pp-num">{s.sold_last_14}</td><td className="pp-num">{s.days_cover === null ? '—' : Math.floor(s.days_cover)}</td></tr>
-              ))}</tbody>
-            </table>
-          )}
-          <p className="pp-h3" style={{ marginTop: 20 }}>Adjust stock</p>
-          <AdminAdjustForm partnerId={partner.id} products={catalog.map(c => ({ id: c.id, name: c.name }))} />
+          <p className="pp-h2">Branches</p>
+          <table className="pp-table">
+            <tbody>
+              {locations.map(l => (
+                <tr key={l.id}>
+                  <td>{l.name}{l.is_default && <span className="pp-badge" style={{ marginLeft: 6 }}>default</span>}{!l.is_active && <span className="pp-badge pp-badge-mute" style={{ marginLeft: 6 }}>closed</span>}
+                    <br /><span className="pp-muted" style={{ fontSize: 12 }}>{locationAddress(l)}{l.contact_name || l.phone ? ` · ${[l.contact_name, l.phone].filter(Boolean).join(', ')}` : ''}</span></td>
+                  <td className="pp-num">{stock.filter(x => x.location_id === l.id).reduce((t, x) => t + x.on_hand, 0)} boxes</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p className="pp-h3" style={{ marginTop: 20 }}>Suggested order</p>
+          {suggestion && sugCases > 0
+            ? <p className="pp-text" style={{ marginBottom: 10 }}>Open: <strong>{sugCases} cases</strong> across {new Set(suggestion.sensare_partner_order_suggestion_lines.map(l => l.location_id)).size} branch(es), updated {fmtDate(suggestion.generated_at)}{suggestion.notified_at ? ' · partner emailed' : ''}. Waiting for the partner to approve.</p>
+            : <p className="pp-muted" style={{ marginBottom: 10 }}>No reorder needed right now.</p>}
+          <form action={generateSuggestionAction} className="pp-row">
+            <input type="hidden" name="partner_id" value={partner.id} />
+            <label className="pp-row pp-muted" style={{ gap: 6 }}><input type="checkbox" name="notify" /> Email partner if a new suggestion opens</label>
+            <button className="pp-btn pp-btn-ghost pp-btn-sm" type="submit">Recalculate now</button>
+          </form>
         </div>
         <div className="pp-card">
           <p className="pp-h2">Orders</p>

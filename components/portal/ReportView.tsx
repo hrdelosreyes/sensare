@@ -92,6 +92,25 @@ export default function ReportView({ report, csvHref, title, extraParams = {}, f
         )}
       </div>
 
+      {report.locations.length > 1 && (
+        <div className="pp-card">
+          <div className="pp-row" style={{ justifyContent: 'space-between', marginBottom: 14 }}>
+            <p className="pp-h2" style={{ marginBottom: 0 }}>By branch</p>
+            <a className="pp-link no-print" href={csvHref('branches')} style={{ fontSize: 13 }}>Download CSV</a>
+          </div>
+          <div className="pp-table-wrap">
+            <table className="pp-table">
+              <thead><tr><th>Branch</th><th className="pp-num">Opening</th><th className="pp-num">Received</th><th className="pp-num">Sold</th><th className="pp-num">Closing</th><th className="pp-num">Sell-through</th><th className="pp-num">Sales value</th></tr></thead>
+              <tbody>
+                {report.locations.map(l => (
+                  <tr key={l.product_id}><td>{l.location_name}</td><td className="pp-num">{l.opening}</td><td className="pp-num">{l.received}</td><td className="pp-num">{l.sold}</td><td className="pp-num">{l.closing}</td><td className="pp-num">{pct(l.sell_through)}</td><td className="pp-num">{peso(l.sales_value, 0)}</td></tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
       {report.partners.length > 0 && (
         <div className="pp-card">
           <div className="pp-row" style={{ justifyContent: 'space-between', marginBottom: 14 }}>

@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 import { requireApprovedPartnerPage } from '@/lib/auth'
 import { supabaseAdmin } from '@/lib/supabase'
 import { getSetting } from '@/lib/partner-data'
-import { balance, fmtDate, isOverdue, manilaToday, peso, PAYMENT_METHOD, PAYMENT_TERMS, PAYMENT_TERMS_HELP, type OrderItem, type PartnerOrder, type Payment } from '@/lib/partner'
+import { balance, fmtDate, isOverdue, locationLabel, manilaToday, peso, PAYMENT_METHOD, PAYMENT_TERMS, PAYMENT_TERMS_HELP, type OrderItem, type PartnerOrder, type Payment } from '@/lib/partner'
 import { OrderStatusBadge, PaymentStatusBadge } from '@/components/portal/ui'
 import { ConfirmButton } from '@/components/portal/forms'
 import { cancelOwnOrderAction, confirmReceivedAction } from '../../actions'
@@ -19,13 +19,15 @@ export default async function OrderDetailPage({ params, searchParams }: {
   const { data: order } = await db.from('sensare_partner_orders').select('*').eq('id', id).eq('partner_id', partner.id).maybeSingle()
   if (!order) notFound()
   const o = order as PartnerOrder
-  const [{ data: items }, { data: payments }, bankDetails] = await Promise.all([
+  const [{ data: items }, { data: payments }, bankDetails, { data: location }, { data: siblings }] = await Promise.all([
     db.from('sensare_partner_order_items').select('*').eq('order_id', o.id),
     db.from('sensare_partner_payments').select('*').eq('order_id', o.id).order('created_at', { ascending: false }),
     getSetting('partner_bank_details'),
+    db.from('sensare_partner_locations').select('name, city').eq('id', o.location_id).maybeSingle(),
+    db.from('sensare_partner_orders').select('id, order_number, sensare_partner_locations(name)').eq('order_group_id', o.order_group_id).neq('id', o.id),
   ])
   const due = balance(o)
-  const visiblePayments = ((payments ?? []) as Payment[]).filter(p => !(p.method === 'hitpay' && p.status !== 'confirmed'))
+  const visiblePayments = ((payments ?? []) as Payment[]).filter(p => !(p.method === 'hitpay' && p.status !== 'confirmed') && !(p.settlement_id && p.status !== 'confirmed' && p.status !== 'pending'))
 
   const timeline = [
     { label: 'Submitted', at: o.created_at },
@@ -86,7 +88,12 @@ export default async function OrderDetailPage({ params, searchParams }: {
             <dl className="pp-dl">
               <dt>Payment terms</dt><dd>{PAYMENT_TERMS[o.payment_terms]}<br /><span className="pp-muted" style={{ fontSize: 13 }}>{PAYMENT_TERMS_HELP[o.payment_terms]}</span></dd>
               <dt>Due date</dt><dd>{o.due_date ? fmtDate(o.due_date) : o.payment_terms === 'consignment' ? 'As units sell' : 'Set on delivery'}</dd>
-              <dt>Deliver to</dt><dd>{o.shipping_address || '—'}</dd>
+              <dt>Branch</dt><dd>{location ? locationLabel(location) : '—'}</dd>
+              <dt>Deliver to</dt><dd style={{ whiteSpace: 'pre-line' }}>{o.shipping_address || '—'}</dd>
+              {(siblings?.length ?? 0) > 0 && <><dt>Same order</dt><dd>{siblings!.map((x, i) => {
+                const ln = x.sensare_partner_locations as unknown as { name: string } | null
+                return <span key={x.id}>{i > 0 && ', '}<Link className="pp-link" href={`/partners/portal/orders/${x.id}`}>{x.order_number}</Link>{ln ? ` (${ln.name})` : ''}</span>
+              })}</dd></>}
               {o.tracking_info && <><dt>Tracking</dt><dd>{o.tracking_info}</dd></>}
               {o.partner_notes && <><dt>Your notes</dt><dd>{o.partner_notes}</dd></>}
             </dl>
@@ -102,7 +109,14 @@ export default async function OrderDetailPage({ params, searchParams }: {
             </ol>
           </div>
 
-          {o.status !== 'cancelled' && due > 0 && (
+          {o.payment_terms === 'consignment' && o.status === 'delivered' && due > 0 && (
+            <div className="pp-card no-print">
+              <p className="pp-h3">Consignment</p>
+              <p className="pp-muted" style={{ marginBottom: 14 }}>You pay for these boxes as they sell. Settle your sales every period from the Consignment page.</p>
+              <Link href="/partners/portal/consignment" className="pp-btn pp-btn-sm">Go to consignment settlement</Link>
+            </div>
+          )}
+          {o.status !== 'cancelled' && due > 0 && !(o.payment_terms === 'consignment' && o.status === 'delivered') && (
             <PayPanel orderId={o.id} balance={due} canPayOnline={o.status !== 'submitted'} bankDetails={bankDetails} today={manilaToday()} />
           )}
         </div>
@@ -117,7 +131,7 @@ export default async function OrderDetailPage({ params, searchParams }: {
               <tbody>
                 {visiblePayments.map(p => (
                   <tr key={p.id}>
-                    <td>{fmtDate(p.paid_on || p.created_at)}</td><td>{PAYMENT_METHOD[p.method]}</td><td>{p.reference || '—'}</td>
+                    <td>{fmtDate(p.paid_on || p.created_at)}</td><td>{PAYMENT_METHOD[p.method]}{p.settlement_id && <><br /><span className="pp-muted" style={{ fontSize: 12 }}>Consignment settlement</span></>}</td><td>{p.reference || '—'}</td>
                     <td><span className={`pp-badge ${p.status === 'confirmed' ? 'pp-badge-ok' : p.status === 'pending' ? 'pp-badge-warn' : 'pp-badge-bad'}`}>{p.status === 'pending' ? 'Verifying' : p.status}</span></td>
                     <td className="pp-num">{peso(p.amount_php)}</td>
                   </tr>

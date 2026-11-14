@@ -26,6 +26,46 @@ export type Partner = {
   admin_notes: string | null
   reviewed_at: string | null
   created_at: string
+  consignment_period_days: number
+  consignment_reminded_at: string | null
+}
+
+export type Location = {
+  id: string
+  partner_id: string
+  name: string
+  contact_name: string | null
+  phone: string | null
+  address: string | null
+  city: string | null
+  province: string | null
+  delivery_notes: string | null
+  is_default: boolean
+  is_active: boolean
+}
+
+export type Settlement = {
+  id: string
+  partner_id: string
+  period_from: string
+  period_to: string
+  units: number
+  amount_php: number
+  method: Exclude<PaymentMethod, 'return_credit'>
+  status: 'pending' | 'confirmed' | 'rejected' | 'failed'
+  reference: string | null
+  notes: string | null
+  paid_on: string | null
+  created_at: string
+  confirmed_at: string | null
+}
+
+export function locationAddress(l: Pick<Location, 'address' | 'city' | 'province'>): string {
+  return [l.address, l.city, l.province].filter(Boolean).join(', ')
+}
+
+export function locationLabel(l: Pick<Location, 'name' | 'city'>): string {
+  return l.city && !l.name.toLowerCase().includes(l.city.toLowerCase()) ? `${l.name} (${l.city})` : l.name
 }
 
 export type Product = {
@@ -45,6 +85,9 @@ export type PartnerOrder = {
   id: string
   order_number: string
   partner_id: string
+  location_id: string
+  order_group_id: string
+  suggestion_id: string | null
   status: OrderStatus
   payment_terms: PaymentTerms
   subtotal_php: number
@@ -87,6 +130,7 @@ export type Payment = {
   paid_on: string | null
   created_at: string
   confirmed_at: string | null
+  settlement_id: string | null
 }
 
 export const PAYMENT_TERMS: Record<PaymentTerms, string> = {
@@ -97,7 +141,7 @@ export const PAYMENT_TERMS: Record<PaymentTerms, string> = {
 
 export const PAYMENT_TERMS_HELP: Record<PaymentTerms, string> = {
   cod: 'Pay in full when the order is delivered.',
-  consignment: 'Pay for units as they sell; settle with Sensarè periodically.',
+  consignment: 'Pay only for boxes sold, settled every period (default weekly).',
   net30: 'Pay in full within 30 days of delivery.',
 }
 

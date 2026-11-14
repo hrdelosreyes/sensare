@@ -98,4 +98,38 @@ export const email = {
       layout('Payment received', `<p>We've recorded your payment of <strong>₱${amount.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</strong> for order ${esc(order.order_number)}. Thank you!</p>`,
         { label: 'View order', href: `${SITE_URL}/partners/portal/orders/${order.id}` }))
   },
+
+  async suggestionReady(p: { email: string; contact_name: string }, cases: number, locations: number) {
+    await send(p.email, 'Your suggested Sensarè reorder is ready',
+      layout(`Time to restock, ${p.contact_name.split(' ')[0]}`,
+        `<p>Based on your recent sales, current stock and our 2-week delivery lead time, we've prepared a suggested order of <strong>${cases} case${cases === 1 ? '' : 's'}</strong>${locations > 1 ? ` across ${locations} branches` : ''}.</p><p>Review it, adjust the quantities if you like, and approve it in one click.</p>`,
+        { label: 'Review suggested order', href: `${SITE_URL}/partners/portal/suggested` }))
+  },
+
+  async consignmentReminder(p: { email: string; contact_name: string }, from: string, to: string, amount: number) {
+    await send(p.email, 'Consignment settlement due',
+      layout(`Hi ${p.contact_name.split(' ')[0]},`,
+        `<p>Your consignment sales from <strong>${esc(from)}</strong> to <strong>${esc(to)}</strong> come to <strong>₱${amount.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</strong>. Please settle online or by bank transfer from the partner portal.</p>`,
+        { label: 'Settle consignment', href: `${SITE_URL}/partners/portal/consignment` }))
+  },
+
+  async settlementReported(partner: { business_name: string }, amount: number, ref: string, from: string, to: string) {
+    await send(await adminEmails(), `Consignment transfer to verify — ${partner.business_name}`,
+      layout('Consignment payment awaiting verification',
+        `<p><strong>${esc(partner.business_name)}</strong> reported a bank transfer of <strong>₱${amount.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</strong> (ref: ${esc(ref)}) for consignment sales ${esc(from)} – ${esc(to)}.</p>`,
+        { label: 'Verify payment', href: `${SITE_URL}/admin/consignment` }))
+  },
+
+  async settlementConfirmed(partner: { email: string }, amount: number, from: string, to: string) {
+    await send(partner.email, 'Consignment payment received',
+      layout('Payment received', `<p>We've recorded your consignment payment of <strong>₱${amount.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</strong> for sales ${esc(from)} – ${esc(to)}. Thank you!</p>`,
+        { label: 'View consignment', href: `${SITE_URL}/partners/portal/consignment` }))
+  },
+
+  async lateSettlementPayment(settlementId: string, amount: number) {
+    await send(await adminEmails(), 'Check: late consignment payment received',
+      layout('Late consignment payment',
+        `<p>HitPay confirmed a consignment payment of <strong>₱${amount.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</strong> after its checkout had expired. It has been recorded — please check the partner hasn't paid the same period twice.</p><p style="font-size:12px;color:#a08070;">Settlement ${esc(settlementId)}</p>`,
+        { label: 'Open consignment', href: `${SITE_URL}/admin/consignment` }))
+  },
 }
