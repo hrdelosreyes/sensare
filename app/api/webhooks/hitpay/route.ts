@@ -2,6 +2,8 @@
 import { createHmac } from 'crypto'
 import { supabaseAdmin } from '@/lib/supabase'
 import { Resend } from 'resend'
+import { PARTNER_REF_PREFIX } from '@/lib/hitpay'
+import { email } from '@/lib/email'
 
 function verifySignature(payload: string, signature: string): boolean {
   const hmac = createHmac('sha256', process.env.HITPAY_SALT!)
@@ -21,6 +23,11 @@ export async function POST(req: NextRequest) {
   const refNum = params.get('reference_number') || ''
   const status = params.get('status') || ''
   const paymentId = params.get('payment_id') || ''
+
+  // Partner (wholesale) order payments
+  if (refNum.startsWith(PARTNER_REF_PREFIX)) {
+    return handlePartnerPayment(refNum, status, paymentId)
+  }
 
   if (status !== 'completed') {
     await supabaseAdmin().from('sensare_orders')
@@ -67,5 +74,32 @@ export async function POST(req: NextRequest) {
     })
   }
 
+  return NextResponse.json({ ok: true })
+}
+
+async function handlePartnerPayment(refNum: string, status: string, paymentId: string) {
+  const db = supabaseAdmin()
+  const { data: payment } = await db.from('sensare_partner_payments')
+    .select('*').eq('reference', refNum).eq('method', 'hitpay').maybeSingle()
+  if (!payment) return NextResponse.json({ error: 'Payment not found' }, { status: 404 })
+  if (payment.status === 'confirmed') return NextResponse.json({ ok: true }) // idempotent
+
+  if (status !== 'completed') {
+    await db.from('sensare_partner_payments').update({ status: 'failed' }).eq('id', payment.id)
+    return NextResponse.json({ ok: true })
+  }
+
+  await db.from('sensare_partner_payments').update({
+    status: 'confirmed',
+    confirmed_at: new Date().toISOString(),
+    paid_on: new Date().toISOString().slice(0, 10),
+    notes: paymentId ? `HitPay payment ${paymentId}` : payment.notes,
+  }).eq('id', payment.id)
+
+  const [{ data: order }, { data: partner }] = await Promise.all([
+    db.from('sensare_partner_orders').select('id, order_number').eq('id', payment.order_id).single(),
+    db.from('sensare_partners').select('email').eq('id', payment.partner_id).single(),
+  ])
+  if (order && partner) await email.paymentConfirmed(order, partner, Number(payment.amount_php))
   return NextResponse.json({ ok: true })
 }

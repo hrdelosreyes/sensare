@@ -1,13 +1,10 @@
 ﻿export const dynamic = 'force-dynamic'
-import { cookies } from 'next/headers'
-import { redirect } from 'next/navigation'
+import { requireAdminPage } from '@/lib/auth'
 import { supabaseAdmin } from '@/lib/supabase'
 import AdminClient from './AdminClient'
 
 export default async function AdminPage() {
-  const cookieStore = await cookies()
-  const authed = cookieStore.get('admin_authed')?.value === 'true'
-  if (!authed) redirect('/admin/login')
+  await requireAdminPage()
 
   const db = supabaseAdmin()
   const [

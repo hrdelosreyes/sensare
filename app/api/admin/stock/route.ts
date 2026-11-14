@@ -1,10 +1,9 @@
 ﻿import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
-import { cookies } from 'next/headers'
+import { getAdmin } from '@/lib/auth'
 
 export async function POST(req: NextRequest) {
-  const cookieStore = await cookies()
-  if (cookieStore.get('admin_authed')?.value !== 'true') {
+  if (!(await getAdmin())) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
   const { productId, stock } = await req.json()
