@@ -31,7 +31,7 @@ export default function Navbar() {
         </Link>
 
         {/* Desktop nav */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 36 }} className="hidden md:flex">
+        <div style={{ alignItems: 'center', gap: 36 }} className="hidden md:flex">
           {links.map(l => (
             <Link key={l.href} href={l.href} style={{
               fontFamily: 'PlayfairDisplay', fontSize: 14, letterSpacing: 1.5,
@@ -57,7 +57,7 @@ export default function Navbar() {
         </div>
 
         {/* Mobile burger */}
-        <button onClick={() => setOpen(!open)} className="md:hidden"
+        <button onClick={() => setOpen(!open)} className="md:hidden" aria-label={open ? 'Close menu' : 'Open menu'} aria-expanded={open}
           style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 8 }}>
           <div style={{ width: 24, height: 2, background: 'var(--rose-gold)', marginBottom: 5 }} />
           <div style={{ width: 24, height: 2, background: 'var(--rose-gold)', marginBottom: 5 }} />
