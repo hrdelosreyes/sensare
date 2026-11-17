@@ -174,3 +174,29 @@ body {
   .pp-badge { background: none !important; color: #000 !important; border: 1px solid #999; }
 }
 .pp-bar:hover > div { background: var(--rose-gold-light) !important; }
+
+/* Section navigation: tabs on desktop, menu button on phones */
+.pp-tabs-mobile { display: none; margin-bottom: 24px; }
+.pp-tabs-toggle {
+  width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  padding: 14px 16px; background: var(--chocolate); border: 1px solid rgba(201,144,106,0.3); border-radius: 4px;
+  color: var(--rose-gold); font-family: 'PlayfairDisplay', Georgia, serif; font-size: 16px; cursor: pointer; text-align: left;
+}
+.pp-tabs-toggle-label { display: flex; align-items: center; gap: 10px; }
+.pp-tabs-toggle-icon { color: var(--text-muted); font-size: 18px; }
+.pp-tabs-menu { list-style: none; margin-top: 6px; background: var(--chocolate); border: 1px solid rgba(201,144,106,0.2); border-radius: 4px; overflow: hidden; }
+.pp-tabs-menu li + li { border-top: 1px solid rgba(201,144,106,0.08); }
+.pp-tabs-menu-item { display: block; padding: 14px 16px; color: var(--cream-dim); text-decoration: none; font-size: 15px; }
+.pp-tabs-menu-item:hover { background: rgba(201,144,106,0.06); }
+.pp-tabs-menu-active { color: var(--rose-gold); background: rgba(201,144,106,0.08); }
+@media (max-width: 767px) {
+  .pp-tabs-desktop { display: none; }
+  .pp-tabs-mobile { display: block; }
+  .pp-wrap { padding: 28px 16px 64px; }
+  .pp-head { margin-bottom: 20px; }
+}
+
+/* Homepage ritual steps: 5 across on desktop, fewer on smaller screens */
+.ritual-steps { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 24px; }
+@media (max-width: 900px) { .ritual-steps { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 600px) { .ritual-steps { grid-template-columns: 1fr; gap: 0; } }

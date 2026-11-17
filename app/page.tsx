@@ -109,7 +109,7 @@ export default async function HomePage() {
             Sensarè isn't just chocolate. It's a five-step ritual designed to slow you down and bring you closer.
           </p>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 24 }}>
+        <div className="ritual-steps">
           {ritualSteps.map(step => (
             <div key={step.num} style={{ textAlign: 'center', padding: '32px 16px' }}>
               <p style={{ fontFamily: 'OleoScript', fontSize: 40, color: 'rgba(201,144,106,0.25)', marginBottom: 8 }}>{step.num}</p>
