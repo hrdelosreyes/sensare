@@ -48,13 +48,13 @@ export default function ContactForm() {
           <button type="submit" disabled={status === 'loading'} style={{ width: '100%', padding: '16px', background: 'var(--rose-gold)', border: 'none', color: 'var(--espresso)', fontFamily: 'PlayfairDisplay', fontWeight: 700, fontSize: 14, letterSpacing: 2, textTransform: 'uppercase', cursor: 'pointer', borderRadius: 2 }}>
             {status === 'loading' ? 'Sending…' : 'Send Message'}
           </button>
-          {status === 'error' && <p style={{ fontFamily: 'PlayfairDisplay', fontSize: 13, color: '#e07070', marginTop: 12 }}>Something went wrong. Email us directly at hello@mysensare.com</p>}
+          {status === 'error' && <p style={{ fontFamily: 'PlayfairDisplay', fontSize: 13, color: '#e07070', marginTop: 12 }}>Something went wrong. Email us directly at mysensare@gmail.com</p>}
         </form>
       )}
 
       <div style={{ marginTop: 56, paddingTop: 32, borderTop: '1px solid rgba(201,144,106,0.1)', textAlign: 'center' }}>
         <p style={{ fontFamily: 'PlayfairDisplay', fontSize: 14, color: 'var(--text-muted)', marginBottom: 8 }}>Prefer email?</p>
-        <a href="mailto:hello@mysensare.com" style={{ fontFamily: 'PlayfairDisplay', fontSize: 16, color: 'var(--rose-gold)' }}>hello@mysensare.com</a>
+        <a href="mailto:mysensare@gmail.com" style={{ fontFamily: 'PlayfairDisplay', fontSize: 16, color: 'var(--rose-gold)' }}>mysensare@gmail.com</a>
       </div>
     </div>
   )

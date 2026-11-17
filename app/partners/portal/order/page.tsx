@@ -34,7 +34,7 @@ export default async function NewOrderPage({ searchParams }: { searchParams: Pro
       </p>
       {suggestionId && <div className="pp-alert pp-alert-info">Pre-filled from your suggested order. Adjust anything you like, then place the order.</div>}
       {catalog.length === 0 ? (
-        <div className="pp-alert pp-alert-warn">Your price list isn&apos;t set up yet. Please contact hello@mysensare.com and we&apos;ll get you ready to order.</div>
+        <div className="pp-alert pp-alert-warn">Your price list isn&apos;t set up yet. Please contact mysensare@gmail.com and we&apos;ll get you ready to order.</div>
       ) : (
         <OrderForm
           catalog={catalog.map(p => ({ id: p.id, name: p.name, case_size: p.case_size, price: p.effective_case_price!, srp: Number(p.price_php) }))}

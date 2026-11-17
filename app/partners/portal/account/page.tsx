@@ -19,7 +19,7 @@ export default async function AccountPage() {
             <dt>Default terms</dt><dd>{PAYMENT_TERMS[partner.default_payment_terms]}</dd>
             <dt>Partner since</dt><dd>{fmtDate(partner.reviewed_at || partner.created_at)}</dd>
           </dl>
-          <p className="pp-hint" style={{ marginTop: 14 }}>To change your business name, TIN or payment terms, email hello@mysensare.com.</p>
+          <p className="pp-hint" style={{ marginTop: 14 }}>To change your business name, TIN or payment terms, email mysensare@gmail.com.</p>
           <p className="pp-h2" style={{ marginTop: 28 }}>Change password</p>
           <ResetForm mode="change" />
         </div>

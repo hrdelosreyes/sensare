@@ -62,6 +62,7 @@ export async function POST(req: NextRequest) {
     const resend = new Resend(process.env.RESEND_API_KEY)
     await resend.emails.send({
       from: 'Sensarè Chocolates <noreply@mysensare.com>',
+      replyTo: 'mysensare@gmail.com',
       to: order.customer_email,
       subject: `Your Sensarè order is confirmed ♥`,
       html: `

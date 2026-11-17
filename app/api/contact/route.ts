@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
     const resend = new Resend(process.env.RESEND_API_KEY)
     await resend.emails.send({
       from: 'Sensarè Contact <noreply@mysensare.com>',
-      to: 'hello@mysensare.com',
+      to: 'mysensare@gmail.com',
       replyTo: email,
       subject: `Contact from ${name}`,
       html: `<p><strong>From:</strong> ${name} (${email})</p><p><strong>Message:</strong></p><p>${message.replace(/\n/g, '<br/>')}</p>`,

@@ -81,7 +81,7 @@ export default async function PartnersPage() {
       <section style={{ maxWidth: 720, margin: '0 auto', padding: '64px 24px', textAlign: 'center' }}>
         <h2 className="pp-h2" style={{ fontSize: 28 }}>Ready to carry Sensarè?</h2>
         <p className="pp-text" style={{ marginBottom: 28 }}>
-          Questions first? Email <a className="pp-link" href="mailto:hello@mysensare.com">hello@mysensare.com</a>{" "}and we&apos;ll be happy to help.
+          Questions first? Email <a className="pp-link" href="mailto:mysensare@gmail.com">mysensare@gmail.com</a>{" "}and we&apos;ll be happy to help.
         </p>
         {!portalHref && <Link href="/partners/apply" className="pp-btn">Start your application</Link>}
       </section>

@@ -21,12 +21,12 @@ export default async function StatusPage() {
     },
     rejected: {
       title: 'Application not approved',
-      body: `We're unable to approve the application for ${partner.business_name} at this time. If you have questions, email hello@mysensare.com.`,
+      body: `We're unable to approve the application for ${partner.business_name} at this time. If you have questions, email mysensare@gmail.com.`,
       cls: 'pp-alert-warn',
     },
     suspended: {
       title: 'Account paused',
-      body: `Access to the partner portal for ${partner.business_name} is currently paused. Please contact hello@mysensare.com.`,
+      body: `Access to the partner portal for ${partner.business_name} is currently paused. Please contact mysensare@gmail.com.`,
       cls: 'pp-alert-warn',
     },
   }[partner.status]
