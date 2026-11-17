@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getAdmin } from '@/lib/auth'
+import { can } from '@/lib/roles'
 
 export async function POST(req: NextRequest) {
-  if (!(await getAdmin())) {
+  const admin = await getAdmin()
+  if (!admin || !can(admin.role, 'store.stock')) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
   const { productId, stock } = await req.json()

@@ -123,6 +123,42 @@ cash/check settlements at **/admin/consignment** and verify bank transfers there
   partner tries again.
 - The daily job emails a reminder when a period has passed and sales are unsettled.
 
+## Roles
+
+Owners manage the team under **Admin → Team** (add people with a role; change
+role, commission or active status). Everyone changes their own password under
+**My Account**. Existing admins became Owners. There is always at least one active Owner.
+
+| Role | Can |
+|---|---|
+| **Owner** | Everything, including Team, Partner Settings and default prices |
+| **Manager** | Approve partners, set partner prices, all orders and payments, reports |
+| **Fulfillment** | Confirm / ship / deliver partner orders, shop stock. Sees no prices or payments |
+| **Finance** | Confirm or record payments and consignment, reports, all commissions |
+| **Viewer** | Read-only partners, orders and reports |
+| **Account Manager** | Only their assigned partners: orders, inventory, deliveries, balances, reports. Logs collections (pending until Finance confirms). Sees their commission |
+
+### Account managers (freelance)
+
+- Each has a personal **sign-up link** (`/partners/apply?ref=CODE`, on their
+  My Accounts / My Account page). Partners who apply with it — or that the
+  account manager signs up on their own phone while logged in — are assigned to
+  them automatically. An Owner or Manager still approves the account and sets prices.
+- Owners/Managers can assign or reassign any partner on the partner's page.
+- **Collections:** cash, check or transfers they log are *pending* until Finance
+  (or an Owner/Manager) confirms the money arrived; only then do they reduce the
+  balance.
+- **Commission:** a % per account manager, earned on payments **confirmed** for
+  their accounts (return credits excluded). The rate is recorded on each payment
+  when it's confirmed, so changing a rate later doesn't change past commission.
+  See **Admin → Commissions** (by month).
+
+### Partner branch staff
+
+Partner owners add staff under **Portal → Team** with a login and the
+branch(es) they work at. Branch staff can only record daily sales and stock
+changes for those branches; they can't order or see prices, payments or reports.
+
 ## Security model
 
 - All data access is server-side with explicit checks (`lib/auth.ts`); every server
@@ -133,4 +169,6 @@ cash/check settlements at **/admin/consignment** and verify bank transfers there
   resetting a password signs out other devices.
 - 8 failed sign-ins for an email within 15 minutes pauses sign-in; reset links are
   single-use and expire after 1 hour (max 3 per hour).
-- Partners only ever see their own rows.
+- Partners only ever see their own rows; account managers only their assigned
+  partners; branch staff only their branches. Every permission is checked on the
+  server (pages, actions and CSV downloads), not just hidden in menus.

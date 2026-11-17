@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { requireAdminPage } from '@/lib/auth'
+import { can } from '@/lib/roles'
 import { db } from '@/lib/db'
 import { balance, fmtDate, isOverdue, peso, PAYMENT_TERMS, type OrderStatus, type PartnerOrder } from '@/lib/partner'
 import { OrderStatusBadge, PaymentStatusBadge, Stat } from '@/components/portal/ui'
@@ -13,7 +14,8 @@ const FILTERS: { key: string; label: string }[] = [
 type Row = PartnerOrder & { business_name: string; location_name: string; pending_transfer: boolean }
 
 export default async function AdminPartnerOrdersPage({ searchParams }: { searchParams: Promise<{ f?: string }> }) {
-  await requireAdminPage()
+  const admin = await requireAdminPage('orders.view')
+  const money = can(admin.role, 'money.view')
   const f = (await searchParams).f ?? 'open'
   const orders = await db()<Row[]>`
     select o.*, p.business_name, l.name as location_name,
@@ -22,6 +24,7 @@ export default async function AdminPartnerOrdersPage({ searchParams }: { searchP
     from sensare_partner_orders o
     join sensare_partners p on p.id = o.partner_id
     join sensare_partner_locations l on l.id = o.location_id
+    where ${admin.role === 'account_manager' ? db()`p.account_manager_id = ${admin.user_id}` : db()`true`}
     order by o.created_at desc limit 1000`
 
   const match = (o: Row) => {
@@ -43,10 +46,10 @@ export default async function AdminPartnerOrdersPage({ searchParams }: { searchP
       <div className="pp-grid">
         <Stat label="To confirm" value={orders.filter(o => o.status === 'submitted').length} />
         <Stat label="To ship" value={orders.filter(o => o.status === 'confirmed').length} />
-        <Stat label="Outstanding" value={peso(active.reduce((s, o) => s + balance(o), 0), 0)} />
-        <Stat label="Overdue" value={peso(active.filter(isOverdue).reduce((s, o) => s + balance(o), 0), 0)} />
+        {money && <Stat label="Outstanding" value={peso(active.reduce((s, o) => s + balance(o), 0), 0)} />}
+        {money && <Stat label="Overdue" value={peso(active.filter(isOverdue).reduce((s, o) => s + balance(o), 0), 0)} />}
       </div>
-      {toVerify.length > 0 && (
+      {money && toVerify.length > 0 && (
         <div className="pp-alert pp-alert-warn" style={{ marginBottom: 0 }}>
           {toVerify.length} order{toVerify.length > 1 ? 's have' : ' has'} a reported bank transfer to verify:{' '}
           {toVerify.slice(0, 8).map((o, i) => <span key={o.id}>{i > 0 && ', '}<Link className="pp-link" href={`/admin/partner-orders/${o.id}`}>{o.order_number}</Link></span>)}
@@ -59,7 +62,7 @@ export default async function AdminPartnerOrdersPage({ searchParams }: { searchP
         {shown.length === 0 ? <p className="pp-empty">No orders here.</p> : (
           <div className="pp-table-wrap">
             <table className="pp-table">
-              <thead><tr><th>Order</th><th>Partner / branch</th><th>Date</th><th>Status</th><th>Terms</th><th>Payment</th><th>Due</th><th className="pp-num">Total</th><th className="pp-num">Balance</th></tr></thead>
+              <thead><tr><th>Order</th><th>Partner / branch</th><th>Date</th><th>Status</th><th>Terms</th>{money && <><th>Payment</th><th>Due</th><th className="pp-num">Total</th><th className="pp-num">Balance</th></>}</tr></thead>
               <tbody>
                 {shown.map(o => (
                   <tr key={o.id}>
@@ -68,10 +71,12 @@ export default async function AdminPartnerOrdersPage({ searchParams }: { searchP
                     <td>{fmtDate(o.created_at)}</td>
                     <td><OrderStatusBadge status={o.status} /></td>
                     <td>{PAYMENT_TERMS[o.payment_terms]}</td>
-                    <td>{o.status !== 'cancelled' && <PaymentStatusBadge status={o.payment_status} overdue={isOverdue(o)} />}</td>
-                    <td>{fmtDate(o.due_date)}</td>
-                    <td className="pp-num">{peso(o.total_php, 0)}</td>
-                    <td className="pp-num">{o.status === 'cancelled' ? '—' : peso(balance(o), 0)}</td>
+                    {money && <>
+                      <td>{o.status !== 'cancelled' && <PaymentStatusBadge status={o.payment_status} overdue={isOverdue(o)} />}</td>
+                      <td>{fmtDate(o.due_date)}</td>
+                      <td className="pp-num">{peso(o.total_php, 0)}</td>
+                      <td className="pp-num">{o.status === 'cancelled' ? '—' : peso(balance(o), 0)}</td>
+                    </>}
                   </tr>
                 ))}
               </tbody>

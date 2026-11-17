@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { db, dbMessage, one } from '@/lib/db'
-import { requireApprovedPartner, getUser } from '@/lib/auth'
+import { createUser, findUserByEmail, isEmail, normalizeEmail, requireApprovedPartner, requirePartnerAccess, getUser } from '@/lib/auth'
 import { getLocations, getPartnerCatalog } from '@/lib/partner-data'
 import { refreshSuggestion } from '@/lib/forecast'
 import { createHitpayPayment, createHitpayRequest } from '@/lib/hitpay'
@@ -225,7 +225,7 @@ export async function refreshSuggestionAction() {
 // ---------------------------------------------------------------- Sales
 
 export async function saveSalesAction(_prev: FormState, fd: FormData): Promise<FormState> {
-  const partner = await requireApprovedPartner()
+  const { partner, locationIds } = await requirePartnerAccess({ allowStaff: true })
   const user = await getUser()
   const date = str(fd, 'sale_date', 10)
   const locationId = str(fd, 'location_id', 64)
@@ -234,6 +234,7 @@ export async function saveSalesAction(_prev: FormState, fd: FormData): Promise<F
   if (date > today) return { error: 'You can’t record sales for a future date.' }
   if (date < addDays(today, -90)) return { error: 'Sales older than 90 days can’t be changed here — please contact us.' }
   if (!(await getLocations(partner.id)).some(l => l.id === locationId)) return { error: 'Choose a branch.' }
+  if (locationIds && !locationIds.includes(locationId)) return { error: 'You can only record sales for your branch.' }
 
   const errors: string[] = []
   let saved = 0
@@ -264,12 +265,13 @@ export async function saveSalesAction(_prev: FormState, fd: FormData): Promise<F
 // ---------------------------------------------------------------- Inventory
 
 export async function adjustInventoryAction(_prev: FormState, fd: FormData): Promise<FormState> {
-  const partner = await requireApprovedPartner()
+  const { partner, locationIds } = await requirePartnerAccess({ allowStaff: true })
   const user = await getUser()
   const [locationId, productId] = str(fd, 'stock_key', 80).split('|')
   const qty = Math.floor(Number(fd.get('qty')))
   const reason = str(fd, 'reason', 50)
   if (!isUuid(locationId ?? '') || !isUuid(productId ?? '')) return { error: 'Choose a product.' }
+  if (locationIds && !locationIds.includes(locationId)) return { error: 'You can only adjust stock for your branch.' }
   if (!(qty > 0)) return { error: 'Enter the number of units to remove.' }
   if (!(reason in ADJUSTMENT_REASONS)) return { error: 'Choose a reason.' }
   const expiry = str(fd, 'expiry_date', 10)
@@ -424,4 +426,60 @@ export async function updateAccountAction(_prev: FormState, fd: FormData): Promi
   })}, updated_at = now() where id = ${partner.id}`
   revalidatePath('/partners/portal', 'layout')
   return { ok: 'Details saved.' }
+}
+
+// ---------------------------------------------------------------- Partner team (branch staff)
+
+export async function addMemberAction(_prev: FormState, fd: FormData): Promise<FormState> {
+  const partner = await requireApprovedPartner()
+  const user = await getUser()
+  const name = str(fd, 'name', 100)
+  const emailAddr = normalizeEmail(str(fd, 'email', 200))
+  const password = String(fd.get('password') ?? '')
+  const branches = fd.getAll('location_id').map(String).filter(isUuid)
+  if (!name) return { error: 'Enter their name.' }
+  if (!isEmail(emailAddr)) return { error: 'Enter a valid email.' }
+  if (password.length < 8) return { error: 'Set a temporary password of at least 8 characters.' }
+  const own = new Set((await getLocations(partner.id)).map(l => l.id))
+  if (!branches.length || branches.some(b => !own.has(b))) return { error: 'Choose at least one of your branches.' }
+  if (await findUserByEmail(emailAddr)) return { error: 'That email already has a Sensarè login. Use a different email.' }
+  const member = await createUser(emailAddr, password)
+  if (!member) return { error: 'Could not create the login. Please try again.' }
+  await db().begin(async tx => {
+    await tx`insert into sensare_partner_members (user_id, partner_id, name, created_by) values (${member.id}, ${partner.id}, ${name}, ${user?.id ?? null})`
+    await tx`insert into sensare_partner_member_locations ${tx(branches.map(location_id => ({ user_id: member.id, location_id })))}`
+  })
+  revalidatePath('/partners/portal/team')
+  return { ok: `${name} can now log in at the partner login with ${emailAddr} and the temporary password. They should change it under Account.` }
+}
+
+export async function updateMemberAction(_prev: FormState, fd: FormData): Promise<FormState> {
+  const partner = await requireApprovedPartner()
+  const memberId = str(fd, 'user_id', 64)
+  const branches = fd.getAll('location_id').map(String).filter(isUuid)
+  const active = fd.get('is_active') === 'on'
+  if (!isUuid(memberId)) return { error: 'Not found.' }
+  const own = new Set((await getLocations(partner.id)).map(l => l.id))
+  if (!branches.length || branches.some(b => !own.has(b))) return { error: 'Choose at least one of your branches.' }
+  const ok = await db().begin(async tx => {
+    const rows = await tx`update sensare_partner_members set is_active = ${active} where user_id = ${memberId} and partner_id = ${partner.id} returning user_id`
+    if (!rows.length) return false
+    await tx`delete from sensare_partner_member_locations where user_id = ${memberId}`
+    await tx`insert into sensare_partner_member_locations ${tx(branches.map(location_id => ({ user_id: memberId, location_id })))}`
+    if (!active) await tx`delete from sensare_sessions where user_id = ${memberId}`
+    return true
+  })
+  if (!ok) return { error: 'Not found.' }
+  revalidatePath('/partners/portal/team')
+  return { ok: 'Saved.' }
+}
+
+export async function removeMemberAction(fd: FormData) {
+  const partner = await requireApprovedPartner()
+  const memberId = str(fd, 'user_id', 64)
+  if (!isUuid(memberId)) return
+  // Remove the login entirely (it only ever belonged to this partner).
+  await db()`delete from sensare_users where id = ${memberId}
+    and id in (select user_id from sensare_partner_members where partner_id = ${partner.id})`
+  revalidatePath('/partners/portal/team')
 }

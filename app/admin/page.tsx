@@ -1,10 +1,11 @@
 export const dynamic = 'force-dynamic'
 import { requireAdminPage } from '@/lib/auth'
+import { can } from '@/lib/roles'
 import { db } from '@/lib/db'
 import AdminClient from './AdminClient'
 
 export default async function AdminPage() {
-  await requireAdminPage()
+  const admin = await requireAdminPage('store.view')
 
   const sql = db()
   const [orders, products, restock, subscribers, testimonials] = await Promise.all([
@@ -17,5 +18,5 @@ export default async function AdminPage() {
     sql`select * from sensare_testimonials order by sort_order`,
   ])
 
-  return <AdminClient orders={[...orders]} products={[...products]} restock={[...restock]} subscribers={[...subscribers]} testimonials={[...testimonials]} />
+  return <AdminClient canEditStock={can(admin.role, 'store.stock')} showMoney={can(admin.role, 'money.view')} orders={[...orders]} products={[...products]} restock={[...restock]} subscribers={[...subscribers]} testimonials={[...testimonials]} />
 }

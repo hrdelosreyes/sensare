@@ -38,7 +38,7 @@ export function StatusForm({ partner }: { partner: Partner }) {
   )
 }
 
-export function PartnerAdminForm({ partner }: { partner: Partner }) {
+export function PartnerAdminForm({ partner, managers }: { partner: Partner; managers: { user_id: string; name: string | null; email: string }[] }) {
   const [state, action] = useActionState(updatePartnerAdminAction, undefined)
   return (
     <ActionForm action={action}>
@@ -48,6 +48,12 @@ export function PartnerAdminForm({ partner }: { partner: Partner }) {
         <input className="pp-input" name="business_name" defaultValue={partner.business_name} required maxLength={200} /></label>
       <label className="pp-field"><span className="pp-label">TIN</span>
         <input className="pp-input" name="tin" defaultValue={partner.tin ?? ''} maxLength={50} /></label>
+      <label className="pp-field"><span className="pp-label">Account manager</span>
+        <select className="pp-select" name="account_manager_id" defaultValue={partner.account_manager_id ?? ''}>
+          <option value="">— None —</option>
+          {managers.map(m => <option key={m.user_id} value={m.user_id}>{m.name || m.email}</option>)}
+        </select>
+        <span className="pp-hint">They see this account and earn commission on its confirmed collections.</span></label>
       <label className="pp-field"><span className="pp-label">Default payment terms</span>
         <TermsSelect value={partner.default_payment_terms} />
         <span className="pp-hint">Pre-selected on new orders. You can change terms on any individual order.</span></label>

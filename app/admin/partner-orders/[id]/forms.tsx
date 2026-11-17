@@ -61,7 +61,7 @@ export function EditOrderForm({ order }: { order: PartnerOrder }) {
   )
 }
 
-export function RecordPaymentForm({ orderId, balance, today }: { orderId: string; balance: number; today: string }) {
+export function RecordPaymentForm({ orderId, balance, today, collector = false }: { orderId: string; balance: number; today: string; collector?: boolean }) {
   const [state, action] = useActionState(recordPaymentAction, undefined)
   return (
     <ActionForm action={action}>
@@ -72,7 +72,7 @@ export function RecordPaymentForm({ orderId, balance, today }: { orderId: string
           <input className="pp-input" name="amount" type="number" step="0.01" min="0.01" defaultValue={balance.toFixed(2)} required /></label>
         <label className="pp-field"><span className="pp-label">Method</span>
           <select className="pp-select" name="method" defaultValue="cash">
-            {Object.entries(PAYMENT_METHOD).filter(([k]) => k !== 'hitpay').map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+            {Object.entries(PAYMENT_METHOD).filter(([k]) => k !== 'hitpay' && !(collector && k === 'return_credit')).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
           </select></label>
         <label className="pp-field"><span className="pp-label">Date received</span>
           <input className="pp-input" name="paid_on" type="date" defaultValue={today} max={today} /></label>
@@ -81,9 +81,11 @@ export function RecordPaymentForm({ orderId, balance, today }: { orderId: string
       </div>
       <label className="pp-field"><span className="pp-label">Notes</span>
         <input className="pp-input" name="notes" maxLength={500} placeholder="e.g. consignment settlement for October sales" /></label>
-      <label className="pp-row pp-muted" style={{ gap: 6, marginBottom: 14 }}><input type="checkbox" name="notify" defaultChecked /> Email a receipt to the partner</label>
-      <SubmitButton className="pp-btn pp-btn-sm">Record payment</SubmitButton>
-      <p className="pp-hint" style={{ marginTop: 8 }}>For consignment, record each settlement as units sell. Use “Return credit” when unsold stock comes back.</p>
+      {!collector && <label className="pp-row pp-muted" style={{ gap: 6, marginBottom: 14 }}><input type="checkbox" name="notify" defaultChecked /> Email a receipt to the partner</label>}
+      <SubmitButton className="pp-btn pp-btn-sm">{collector ? 'Log collection' : 'Record payment'}</SubmitButton>
+      <p className="pp-hint" style={{ marginTop: 8 }}>{collector
+        ? 'Finance confirms it once the money arrives; it then reduces the balance and counts toward your commission.'
+        : 'For consignment, record each settlement as units sell. Use “Return credit” when unsold stock comes back.'}</p>
     </ActionForm>
   )
 }

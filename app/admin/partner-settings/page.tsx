@@ -6,7 +6,7 @@ import type { Product } from '@/lib/partner'
 import SettingsForm from './SettingsForm'
 
 export default async function PartnerSettingsPage() {
-  await requireAdminPage()
+  await requireAdminPage('settings.manage')
   const [products, bank, forecast] = await Promise.all([
     db()<Product[]>`select * from sensare_products order by sort_order`,
     getSetting('partner_bank_details'),

@@ -1,12 +1,17 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { getAdmin } from '@/lib/auth'
 import { buildReport, parseRange, reportCsv } from '@/lib/reports'
+import { reportScope } from '@/lib/admin-scope'
+import { can } from '@/lib/roles'
 
 export async function GET(req: NextRequest) {
-  if (!(await getAdmin())) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const admin = await getAdmin()
+  if (!admin || !can(admin.role, 'reports.view')) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const sp = Object.fromEntries(req.nextUrl.searchParams)
-  const partnerId = sp.partner && /^[0-9a-f-]{36}$/i.test(sp.partner) ? sp.partner : null
-  const out = reportCsv(await buildReport(partnerId, parseRange(sp)), sp.kind)
+  const { partners, scopeIds } = await reportScope(admin)
+  const partnerId = partners.some(p => p.id === sp.partner) ? sp.partner : null
+  if (sp.partner && !partnerId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const out = reportCsv(await buildReport(partnerId, parseRange(sp), null, scopeIds), sp.kind)
   if (!out) return NextResponse.json({ error: 'Unknown report' }, { status: 400 })
   return new NextResponse(out.csv, {
     headers: {

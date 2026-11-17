@@ -4,7 +4,7 @@ import { recordSettlementAction } from '../actions'
 import { ActionForm, FormMessage, SubmitButton } from '@/components/portal/forms'
 import { peso } from '@/lib/partner'
 
-export default function RecordSettlementForm({ partnerId, to, amount, today }: { partnerId: string; to: string; amount: number; today: string }) {
+export default function RecordSettlementForm({ partnerId, to, amount, today, collector = false }: { partnerId: string; to: string; amount: number; today: string; collector?: boolean }) {
   const [state, action] = useActionState(recordSettlementAction, undefined)
   return (
     <ActionForm action={action} style={{ marginTop: 20, maxWidth: 640 }}>
@@ -21,8 +21,9 @@ export default function RecordSettlementForm({ partnerId, to, amount, today }: {
         <label className="pp-field"><span className="pp-label">Reference</span><input className="pp-input" name="reference" maxLength={100} /></label>
         <label className="pp-field"><span className="pp-label">Notes</span><input className="pp-input" name="notes" maxLength={500} /></label>
       </div>
-      <label className="pp-row pp-muted" style={{ gap: 6, marginBottom: 14 }}><input type="checkbox" name="notify" defaultChecked /> Email a receipt to the partner</label>
-      <SubmitButton>Record {peso(amount, 0)} received</SubmitButton>
+      {!collector && <label className="pp-row pp-muted" style={{ gap: 6, marginBottom: 14 }}><input type="checkbox" name="notify" defaultChecked /> Email a receipt to the partner</label>}
+      <SubmitButton>{collector ? `Log ${peso(amount, 0)} collected` : `Record ${peso(amount, 0)} received`}</SubmitButton>
+      {collector && <p className="pp-hint" style={{ marginTop: 8 }}>Finance confirms it once the money arrives.</p>}
     </ActionForm>
   )
 }

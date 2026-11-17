@@ -30,7 +30,17 @@ export async function applyAction(_prev: FormState, fd: FormData): Promise<FormS
   if (business_type && !(business_type in BUSINESS_TYPES)) return { error: 'Please choose a business type.' }
   if (fd.get('agree') !== 'on') return { error: 'Please agree to the partner terms.' }
 
-  let user = await getUser()
+  // Staff (e.g. an account manager on their phone) can sign a partner up on the
+  // partner's behalf: a new partner login is created and the staff session is kept.
+  const staff = await getAdmin()
+  let user = staff ? null : await getUser()
+
+  // Assign the account manager from the sign-up link, or the signed-in account manager.
+  const ref = str(fd, 'ref', 20).toUpperCase()
+  const am = ref
+    ? await one(db()<{ user_id: string }[]>`select user_id from sensare_admins where referral_code = ${ref} and role = 'account_manager' and is_active`)
+    : staff?.role === 'account_manager' ? { user_id: staff.user_id } : null
+
   if (!user) {
     const emailAddr = normalizeEmail(str(fd, 'email', 200))
     const password = String(fd.get('password') ?? '')
@@ -38,7 +48,9 @@ export async function applyAction(_prev: FormState, fd: FormData): Promise<FormS
     if (password.length < 8) return { error: 'Password must be at least 8 characters.' }
 
     user = await createUser(emailAddr, password)
-    if (user) {
+    if (staff) {
+      if (!user) return { error: 'That email already has an account. Ask the partner to apply themselves with it.' }
+    } else if (user) {
       await startSession(user.id)
     } else {
       // The email already has an account: continue only with its correct password.
@@ -48,10 +60,11 @@ export async function applyAction(_prev: FormState, fd: FormData): Promise<FormS
     }
   }
 
-  if (await getPartner()) redirect('/partners/status')
+  if (!staff && (await getPartner())) redirect('/partners/status')
 
   const row = {
     user_id: user.id,
+    account_manager_id: am?.user_id ?? null,
     business_name, contact_name, phone,
     email: user.email,
     tin: str(fd, 'tin', 50) || null,
@@ -72,7 +85,7 @@ export async function applyAction(_prev: FormState, fd: FormData): Promise<FormS
   }
 
   await email.applicationReceived(row)
-  redirect('/partners/status')
+  redirect(staff ? '/admin/partners?status=pending' : '/partners/status')
 }
 
 export async function loginAction(_prev: FormState, fd: FormData): Promise<FormState> {
