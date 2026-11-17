@@ -1,0 +1,22 @@
+import { requireAdminPage } from '@/lib/auth'
+import { db } from '@/lib/db'
+import { getSetting } from '@/lib/partner-data'
+import { getForecastSettings } from '@/lib/forecast'
+import type { Product } from '@/lib/partner'
+import SettingsForm from './SettingsForm'
+
+export default async function PartnerSettingsPage() {
+  await requireAdminPage()
+  const [products, bank, forecast] = await Promise.all([
+    db()<Product[]>`select * from sensare_products order by sort_order`,
+    getSetting('partner_bank_details'),
+    getForecastSettings(),
+  ])
+  return (
+    <div>
+      <h1 className="pp-h1">Partner settings</h1>
+      <p className="pp-muted" style={{ marginBottom: 24 }}>Defaults that apply to every partner. Custom prices per partner are set on each partner&apos;s page.</p>
+      <SettingsForm bank={bank} forecast={forecast} products={[...products]} />
+    </div>
+  )
+}

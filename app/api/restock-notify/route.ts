@@ -1,15 +1,15 @@
-﻿import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase'
+import { NextRequest, NextResponse } from 'next/server'
+import { db } from '@/lib/db'
 
 export async function POST(req: NextRequest) {
   try {
     const { email, productId } = await req.json()
     if (!email || !productId) return NextResponse.json({ error: 'Missing fields' }, { status: 400 })
 
-    const { error } = await supabaseAdmin().from('sensare_restock_notifications').upsert(
-      { email: email.toLowerCase(), product_id: productId },
-      { onConflict: 'email,product_id', ignoreDuplicates: true }
-    )
+    const error = await db()`
+      insert into sensare_restock_notifications (email, product_id)
+      values (${String(email).toLowerCase()}, ${productId}::uuid)
+      on conflict (email, product_id) do nothing`.then(() => null, (e: unknown) => e)
 
     if (error) throw error
     return NextResponse.json({ ok: true })

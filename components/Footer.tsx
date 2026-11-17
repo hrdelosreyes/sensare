@@ -78,6 +78,7 @@ export default function Footer() {
             { href: '/about', label: 'Our Story' },
             { href: '/faq', label: 'FAQ' },
             { href: '/contact', label: 'Contact' },
+            { href: '/partners', label: 'Become a Partner' },
           ].map(l => (
             <Link key={l.href} href={l.href} style={{
               display: 'block', marginBottom: 10,

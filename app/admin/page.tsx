@@ -1,28 +1,21 @@
-﻿export const dynamic = 'force-dynamic'
-import { cookies } from 'next/headers'
-import { redirect } from 'next/navigation'
-import { supabaseAdmin } from '@/lib/supabase'
+export const dynamic = 'force-dynamic'
+import { requireAdminPage } from '@/lib/auth'
+import { db } from '@/lib/db'
 import AdminClient from './AdminClient'
 
 export default async function AdminPage() {
-  const cookieStore = await cookies()
-  const authed = cookieStore.get('admin_authed')?.value === 'true'
-  if (!authed) redirect('/admin/login')
+  await requireAdminPage()
 
-  const db = supabaseAdmin()
-  const [
-    { data: orders },
-    { data: products },
-    { data: restock },
-    { data: subscribers },
-    { data: testimonials },
-  ] = await Promise.all([
-    db.from('sensare_orders').select('*').order('created_at', { ascending: false }).limit(100),
-    db.from('sensare_products').select('*').order('sort_order'),
-    db.from('sensare_restock_notifications').select('*, sensare_products(name)').is('notified_at', null).order('created_at', { ascending: false }),
-    db.from('sensare_newsletter_subscribers').select('*').is('unsubscribed_at', null).order('subscribed_at', { ascending: false }),
-    db.from('sensare_testimonials').select('*').order('sort_order'),
+  const sql = db()
+  const [orders, products, restock, subscribers, testimonials] = await Promise.all([
+    sql`select * from sensare_orders order by created_at desc limit 100`,
+    sql`select * from sensare_products order by sort_order`,
+    sql`select r.*, p.name as product_name from sensare_restock_notifications r
+        left join sensare_products p on p.id = r.product_id
+        where r.notified_at is null order by r.created_at desc`,
+    sql`select * from sensare_newsletter_subscribers where unsubscribed_at is null order by subscribed_at desc`,
+    sql`select * from sensare_testimonials order by sort_order`,
   ])
 
-  return <AdminClient orders={orders || []} products={products || []} restock={restock || []} subscribers={subscribers || []} testimonials={testimonials || []} />
+  return <AdminClient orders={[...orders]} products={[...products]} restock={[...restock]} subscribers={[...subscribers]} testimonials={[...testimonials]} />
 }

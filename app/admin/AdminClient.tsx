@@ -18,11 +18,10 @@ export default function AdminClient({ orders, products, restock, subscribers, te
   const revenue = orders.filter(o => o.payment_status === 'paid').reduce((s, o) => s + (o.total_php as number), 0)
 
   return (
-    <div style={{ paddingTop: 72, minHeight: '100vh', background: 'var(--espresso)' }}>
-      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '40px 24px' }}>
-        <div style={{ marginBottom: 40 }}>
-          <p style={{ fontFamily: 'OleoScript', fontSize: 22, color: 'var(--rose-gold)', marginBottom: 4 }}>Sensarè Admin</p>
-          <h1 style={{ fontFamily: 'PlayfairDisplay', fontWeight: 700, fontSize: 32, color: 'var(--cream)' }}>Dashboard</h1>
+    <div>
+      <div>
+        <div style={{ marginBottom: 32 }}>
+          <h1 className="pp-h1">Online Store</h1>
         </div>
 
         {/* Stats */}
@@ -112,7 +111,7 @@ export default function AdminClient({ orders, products, restock, subscribers, te
             {restock.map(r => (
               <div key={r.id as string} style={{ background: 'var(--chocolate)', border: '1px solid rgba(201,144,106,0.1)', borderRadius: 4, padding: '14px 20px', marginBottom: 8, display: 'flex', justifyContent: 'space-between' }}>
                 <span style={{ fontFamily: 'PlayfairDisplay', fontSize: 14, color: 'var(--cream)' }}>{r.email as string}</span>
-                <span style={{ fontFamily: 'PlayfairDisplay', fontSize: 13, color: 'var(--text-muted)' }}>{((r.products as Record<string,string>)?.name) || ''}</span>
+                <span style={{ fontFamily: 'PlayfairDisplay', fontSize: 13, color: 'var(--text-muted)' }}>{(r.product_name as string) || ''}</span>
               </div>
             ))}
             {restock.length === 0 && <p style={{ fontFamily: 'PlayfairDisplay', fontStyle: 'italic', color: 'var(--text-muted)' }}>No restock requests.</p>}

@@ -1,8 +1,8 @@
-﻿export const dynamic = 'force-dynamic'
+export const dynamic = 'force-dynamic'
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { supabaseAdmin } from '@/lib/supabase'
+import { db } from '@/lib/db'
 import RestockForm from '@/components/RestockForm'
 import type { Metadata } from 'next'
 
@@ -13,10 +13,9 @@ export const metadata: Metadata = {
 }
 
 async function getHomeData() {
-  const db = supabaseAdmin()
-  const [{ data: products }, { data: testimonials }] = await Promise.all([
-    db.from('sensare_products').select('*').eq('is_active', true).order('sort_order'),
-    db.from('sensare_testimonials').select('*').eq('is_featured', true).order('sort_order'),
+  const [products, testimonials] = await Promise.all([
+    db()`select * from sensare_products where is_active order by sort_order`,
+    db()`select * from sensare_testimonials where is_featured order by sort_order`,
   ])
   return { products: products || [], testimonials: testimonials || [] }
 }

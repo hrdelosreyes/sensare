@@ -1,5 +1,5 @@
-﻿import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase'
+import { NextRequest, NextResponse } from 'next/server'
+import { db } from '@/lib/db'
 import { Resend } from 'resend'
 
 export async function POST(req: NextRequest) {
@@ -7,8 +7,7 @@ export async function POST(req: NextRequest) {
     const { email } = await req.json()
     if (!email) return NextResponse.json({ error: 'Missing email' }, { status: 400 })
 
-    await supabaseAdmin().from('sensare_newsletter_subscribers')
-      .upsert({ email: email.toLowerCase() }, { onConflict: 'email', ignoreDuplicates: true })
+    await db()`insert into sensare_newsletter_subscribers (email) values (${String(email).toLowerCase()}) on conflict (email) do nothing`
 
     const resend = new Resend(process.env.RESEND_API_KEY)
     await resend.emails.send({
