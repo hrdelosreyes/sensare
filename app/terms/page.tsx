@@ -13,7 +13,7 @@ export default function TermsPage() {
           { title: 'Health', body: 'Do not use if pregnant, breastfeeding, or if you have a known sensitivity to any ingredient. Consult a healthcare provider if uncertain.' },
           { title: 'Orders', body: 'All orders are subject to availability. We reserve the right to cancel orders if stock runs out before fulfilment. In such cases, a full refund will be issued.' },
           { title: 'Returns', body: 'Due to the perishable nature of our product, we do not accept returns. Damaged or incorrect orders will be replaced at no cost — contact us within 24 hours of delivery.' },
-          { title: 'Contact', body: 'For any questions, email hello@mysensare.com.' },
+          { title: 'Contact', body: 'For any questions, email mysensare@gmail.com.' },
         ].map(s => (
           <div key={s.title} style={{ marginBottom: 32 }}>
             <h2 style={{ fontFamily: 'PlayfairDisplay', fontWeight: 700, fontSize: 18, color: 'var(--rose-gold)', marginBottom: 10 }}>{s.title}</h2>

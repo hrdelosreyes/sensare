@@ -15,7 +15,7 @@ export default function ShippingPage() {
           { title: 'Nationwide (Provincial)', details: ['3–7 business days via LBC', 'Flat rate ₱150 shipping', 'Free delivery on orders ₱1,000+'] },
           { title: 'Packaging', details: ['All orders are packed in our premium gift-ready box', 'Temperature-sensitive — avoid direct sunlight', 'Store under 25°C upon receipt'] },
           { title: 'Tracking', details: ['Tracking number sent via email once dispatched', 'For Metro Manila: same-day or next-day tracking available', 'For provinces: LBC tracking applies'] },
-          { title: 'Issues with your order?', details: ['Contact us within 24 hours of delivery at hello@mysensare.com', 'We replace damaged or incorrect orders — no questions asked'] },
+          { title: 'Issues with your order?', details: ['Contact us within 24 hours of delivery at mysensare@gmail.com', 'We replace damaged or incorrect orders — no questions asked'] },
         ].map(section => (
           <div key={section.title} style={{ marginBottom: 40, paddingBottom: 40, borderBottom: '1px solid rgba(201,144,106,0.1)' }}>
             <h2 style={{ fontFamily: 'PlayfairDisplay', fontWeight: 700, fontSize: 20, color: 'var(--rose-gold)', marginBottom: 16 }}>{section.title}</h2>

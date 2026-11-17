@@ -4,6 +4,7 @@ import { db } from './db'
 import { SITE_URL } from './seo'
 
 const FROM = 'Sensarè Partners <noreply@mysensare.com>'
+const REPLY_TO = 'mysensare@gmail.com'
 
 function esc(s: unknown): string {
   return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!))
@@ -25,7 +26,7 @@ async function send(to: string | string[], subject: string, html: string) {
   const recipients = (Array.isArray(to) ? to : [to]).filter(Boolean)
   if (!recipients.length || !process.env.RESEND_API_KEY) return
   try {
-    await new Resend(process.env.RESEND_API_KEY).emails.send({ from: FROM, to: recipients, subject, html })
+    await new Resend(process.env.RESEND_API_KEY).emails.send({ from: FROM, replyTo: REPLY_TO, to: recipients, subject, html })
   } catch (err) {
     console.error('Email send failed:', subject, err)
   }
@@ -55,11 +56,11 @@ export const email = {
     } else if (status === 'rejected') {
       await send(p.email, 'Update on your Sensarè partner application',
         layout(`Hi ${p.contact_name},`,
-          `<p>Thank you for your interest in becoming a Sensarè partner. We're unable to approve the application for <strong>${esc(p.business_name)}</strong> at this time.</p>${note ? `<p>${esc(note)}</p>` : ''}<p>You're welcome to reply to hello@mysensare.com with any questions.</p>`))
+          `<p>Thank you for your interest in becoming a Sensarè partner. We're unable to approve the application for <strong>${esc(p.business_name)}</strong> at this time.</p>${note ? `<p>${esc(note)}</p>` : ''}<p>You're welcome to reply to mysensare@gmail.com with any questions.</p>`))
     } else if (status === 'suspended') {
       await send(p.email, 'Your Sensarè partner account has been paused',
         layout(`Hi ${p.contact_name},`,
-          `<p>Access to the partner portal for <strong>${esc(p.business_name)}</strong> has been paused.</p>${note ? `<p>${esc(note)}</p>` : ''}<p>Please contact hello@mysensare.com for details.</p>`))
+          `<p>Access to the partner portal for <strong>${esc(p.business_name)}</strong> has been paused.</p>${note ? `<p>${esc(note)}</p>` : ''}<p>Please contact mysensare@gmail.com for details.</p>`))
     }
   },
 

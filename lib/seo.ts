@@ -17,7 +17,7 @@ export const organizationJsonLd = {
   url: SITE_URL,
   logo: absoluteUrl('/logo-sensare.png'),
   description: SITE_DESCRIPTION,
-  email: 'hello@mysensare.com',
+  email: 'mysensare@gmail.com',
   areaServed: 'PH',
   sameAs: [] as string[],
 }

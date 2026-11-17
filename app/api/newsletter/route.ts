@@ -12,6 +12,7 @@ export async function POST(req: NextRequest) {
     const resend = new Resend(process.env.RESEND_API_KEY)
     await resend.emails.send({
       from: 'Sensarè Chocolates <noreply@mysensare.com>',
+      replyTo: 'mysensare@gmail.com',
       to: email,
       subject: 'Your Sensarè Ritual Guide ♥',
       html: `

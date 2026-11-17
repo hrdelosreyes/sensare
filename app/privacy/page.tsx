@@ -12,7 +12,7 @@ export default function PrivacyPage() {
           { title: 'How we use it', body: 'We use your information to fulfil your order, send order confirmations, and (if subscribed) send you the Sensarè Ritual Guide and occasional updates. We do not sell your data to third parties.' },
           { title: 'Payments', body: 'Payments are processed securely by HitPay. We do not store your card or payment details.' },
           { title: 'Cookies', body: 'We use a single session cookie for admin authentication. We do not use tracking or advertising cookies.' },
-          { title: 'Contact', body: 'For any privacy questions, email hello@mysensare.com.' },
+          { title: 'Contact', body: 'For any privacy questions, email mysensare@gmail.com.' },
         ].map(s => (
           <div key={s.title} style={{ marginBottom: 32 }}>
             <h2 style={{ fontFamily: 'PlayfairDisplay', fontWeight: 700, fontSize: 18, color: 'var(--rose-gold)', marginBottom: 10 }}>{s.title}</h2>
