@@ -1,7 +1,7 @@
 'use client'
 import { useActionState } from 'react'
 import { setPartnerStatusAction, updatePartnerAdminAction, savePartnerPricesAction, adminAdjustInventoryAction } from '../../actions'
-import { FormMessage, SubmitButton } from '@/components/portal/forms'
+import { ActionForm, FormMessage, SubmitButton } from '@/components/portal/forms'
 import { ADJUSTMENT_REASONS, PAYMENT_TERMS, peso, type Partner, type PaymentTerms } from '@/lib/partner'
 
 function TermsSelect({ name = 'default_payment_terms', value }: { name?: string; value: PaymentTerms }) {
@@ -16,7 +16,7 @@ export function StatusForm({ partner }: { partner: Partner }) {
   const [state, action] = useActionState(setPartnerStatusAction, undefined)
   const s = partner.status
   return (
-    <form action={action} className="pp-card" style={{ borderColor: s === 'pending' ? 'rgba(230,180,80,0.4)' : undefined }}>
+    <ActionForm action={action} className="pp-card" style={{ borderColor: s === 'pending' ? 'rgba(230,180,80,0.4)' : undefined }}>
       <input type="hidden" name="partner_id" value={partner.id} />
       <FormMessage state={state} />
       <p className="pp-h2">{s === 'pending' ? 'Review application' : 'Access'}</p>
@@ -34,14 +34,14 @@ export function StatusForm({ partner }: { partner: Partner }) {
         {s === 'approved' && <SubmitButton name="status" value="suspended" className="pp-btn pp-btn-danger" pendingText="…">Suspend access</SubmitButton>}
         <label className="pp-row pp-muted" style={{ gap: 6 }}><input type="checkbox" name="notify" value="off" /> Don&apos;t email the partner</label>
       </div>
-    </form>
+    </ActionForm>
   )
 }
 
 export function PartnerAdminForm({ partner }: { partner: Partner }) {
   const [state, action] = useActionState(updatePartnerAdminAction, undefined)
   return (
-    <form action={action}>
+    <ActionForm action={action}>
       <input type="hidden" name="partner_id" value={partner.id} />
       <FormMessage state={state} />
       <label className="pp-field"><span className="pp-label">Business name</span>
@@ -57,7 +57,7 @@ export function PartnerAdminForm({ partner }: { partner: Partner }) {
       <label className="pp-field"><span className="pp-label">Internal notes (not visible to partner)</span>
         <textarea className="pp-textarea" name="admin_notes" defaultValue={partner.admin_notes ?? ''} maxLength={2000} /></label>
       <SubmitButton>Save</SubmitButton>
-    </form>
+    </ActionForm>
   )
 }
 
@@ -66,7 +66,7 @@ type PriceItem = { id: string; name: string; case_size: number; srp: number; cus
 export function PriceListForm({ partnerId, items }: { partnerId: string; items: PriceItem[] }) {
   const [state, action] = useActionState(savePartnerPricesAction, undefined)
   return (
-    <form action={action}>
+    <ActionForm action={action}>
       <input type="hidden" name="partner_id" value={partnerId} />
       <FormMessage state={state} />
       <div className="pp-table-wrap">
@@ -88,14 +88,14 @@ export function PriceListForm({ partnerId, items }: { partnerId: string; items: 
       {items.length === 0 && <p className="pp-empty">No wholesale products. Enable them in Partner Settings.</p>}
       <p className="pp-hint" style={{ margin: '8px 0 14px' }}>A product with no partner price and no default price can&apos;t be ordered.</p>
       <SubmitButton>Save price list</SubmitButton>
-    </form>
+    </ActionForm>
   )
 }
 
 export function AdminAdjustForm({ partnerId, options }: { partnerId: string; options: { key: string; label: string }[] }) {
   const [state, action] = useActionState(adminAdjustInventoryAction, undefined)
   return (
-    <form action={action}>
+    <ActionForm action={action}>
       <input type="hidden" name="partner_id" value={partnerId} />
       <FormMessage state={state} />
       <div className="pp-grid-2" style={{ gap: '0 12px' }}>
@@ -109,6 +109,6 @@ export function AdminAdjustForm({ partnerId, options }: { partnerId: string; opt
           <input className="pp-input" name="notes" maxLength={500} /></label>
       </div>
       <SubmitButton className="pp-btn pp-btn-sm">Save adjustment</SubmitButton>
-    </form>
+    </ActionForm>
   )
 }

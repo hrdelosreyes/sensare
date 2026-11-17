@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { requireApprovedPartnerPage } from '@/lib/auth'
-import { supabaseAdmin } from '@/lib/supabase'
+import { db } from '@/lib/db'
 import NavTabs from '@/components/portal/NavTabs'
 import { logoutAction } from '../actions'
 
@@ -11,11 +11,10 @@ export const metadata: Metadata = {
 
 export default async function PortalLayout({ children }: { children: React.ReactNode }) {
   const partner = await requireApprovedPartnerPage()
-  const db = supabaseAdmin()
-  const [{ count: openSuggestions }, { count: consignmentOrders }] = await Promise.all([
-    db.from('sensare_partner_order_suggestions').select('id', { count: 'exact', head: true }).eq('partner_id', partner.id).eq('status', 'open'),
-    db.from('sensare_partner_orders').select('id', { count: 'exact', head: true }).eq('partner_id', partner.id).eq('payment_terms', 'consignment').neq('status', 'cancelled'),
-  ])
+  const [{ openSuggestions, consignmentOrders }] = await db()<{ openSuggestions: number; consignmentOrders: number }[]>`
+    select
+      (select count(*) from sensare_partner_order_suggestions where partner_id = ${partner.id} and status = 'open')::int as "openSuggestions",
+      (select count(*) from sensare_partner_orders where partner_id = ${partner.id} and payment_terms = 'consignment' and status <> 'cancelled')::int as "consignmentOrders"`
   const showConsignment = partner.default_payment_terms === 'consignment' || (consignmentOrders ?? 0) > 0
 
   const links = [

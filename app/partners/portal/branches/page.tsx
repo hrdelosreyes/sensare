@@ -1,5 +1,5 @@
 import { requireApprovedPartnerPage } from '@/lib/auth'
-import { supabaseAdmin } from '@/lib/supabase'
+import { db } from '@/lib/db'
 import { getLocations } from '@/lib/partner-data'
 import { locationAddress } from '@/lib/partner'
 import { setDefaultLocationAction } from '../actions'
@@ -7,12 +7,12 @@ import { LocationForm, ToggleLocation } from './forms'
 
 export default async function BranchesPage() {
   const partner = await requireApprovedPartnerPage()
-  const [locations, { data: stock }] = await Promise.all([
+  const [locations, stock] = await Promise.all([
     getLocations(partner.id, false),
-    supabaseAdmin().from('sensare_partner_stock').select('location_id, on_hand').eq('partner_id', partner.id),
+    db()<{ location_id: string; on_hand: number }[]>`select location_id, on_hand from sensare_partner_stock where partner_id = ${partner.id}`,
   ])
   const units = new Map<string, number>()
-  for (const s of stock ?? []) units.set(s.location_id, (units.get(s.location_id) ?? 0) + Number(s.on_hand))
+  for (const s of stock) units.set(s.location_id, (units.get(s.location_id) ?? 0) + Number(s.on_hand))
   const active = locations.filter(l => l.is_active)
   const closed = locations.filter(l => !l.is_active)
 

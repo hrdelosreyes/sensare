@@ -111,7 +111,7 @@ export default function AdminClient({ orders, products, restock, subscribers, te
             {restock.map(r => (
               <div key={r.id as string} style={{ background: 'var(--chocolate)', border: '1px solid rgba(201,144,106,0.1)', borderRadius: 4, padding: '14px 20px', marginBottom: 8, display: 'flex', justifyContent: 'space-between' }}>
                 <span style={{ fontFamily: 'PlayfairDisplay', fontSize: 14, color: 'var(--cream)' }}>{r.email as string}</span>
-                <span style={{ fontFamily: 'PlayfairDisplay', fontSize: 13, color: 'var(--text-muted)' }}>{((r.products as Record<string,string>)?.name) || ''}</span>
+                <span style={{ fontFamily: 'PlayfairDisplay', fontSize: 13, color: 'var(--text-muted)' }}>{(r.product_name as string) || ''}</span>
               </div>
             ))}
             {restock.length === 0 && <p style={{ fontFamily: 'PlayfairDisplay', fontStyle: 'italic', color: 'var(--text-muted)' }}>No restock requests.</p>}

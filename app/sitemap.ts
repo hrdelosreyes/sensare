@@ -1,5 +1,5 @@
 import type { MetadataRoute } from 'next'
-import { supabaseAdmin } from '@/lib/supabase'
+import { db } from '@/lib/db'
 import { absoluteUrl } from '@/lib/seo'
 
 export const dynamic = 'force-dynamic'
@@ -22,10 +22,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   let productRoutes: MetadataRoute.Sitemap = []
   try {
-    const { data } = await supabaseAdmin()
-      .from('sensare_products')
-      .select('slug, updated_at')
-      .eq('is_active', true)
+    const data = await db()<{ slug: string; updated_at?: string }[]>`select slug, created_at as updated_at from sensare_products where is_active`
     productRoutes = (data || []).map((p: { slug: string; updated_at?: string }) => ({
       url: absoluteUrl(`/shop/${p.slug}`),
       lastModified: p.updated_at ? new Date(p.updated_at) : now,

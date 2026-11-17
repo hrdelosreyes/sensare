@@ -1,5 +1,5 @@
 import { requireAdminPage } from '@/lib/auth'
-import { supabaseAdmin } from '@/lib/supabase'
+import { db } from '@/lib/db'
 import { fmtDate } from '@/lib/partner'
 import { ConfirmButton } from '@/components/portal/forms'
 import { removeAdminAction } from '../actions'
@@ -7,8 +7,8 @@ import { AddAdminForm, ChangePasswordForm } from './forms'
 
 export default async function TeamPage() {
   const me = await requireAdminPage()
-  const { data: admins } = await supabaseAdmin().from('sensare_admins').select('*').order('created_at')
-  const list = admins ?? []
+  const list = await db()<{ user_id: string; email: string; name: string | null; created_at: string }[]>`
+    select * from sensare_admins order by created_at`
   return (
     <div className="pp-stack">
       <h1 className="pp-h1">Team</h1>

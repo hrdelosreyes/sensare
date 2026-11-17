@@ -1,13 +1,13 @@
 'use client'
 import { useActionState } from 'react'
 import { recordSettlementAction } from '../actions'
-import { FormMessage, SubmitButton } from '@/components/portal/forms'
+import { ActionForm, FormMessage, SubmitButton } from '@/components/portal/forms'
 import { peso } from '@/lib/partner'
 
 export default function RecordSettlementForm({ partnerId, to, amount, today }: { partnerId: string; to: string; amount: number; today: string }) {
   const [state, action] = useActionState(recordSettlementAction, undefined)
   return (
-    <form action={action} style={{ marginTop: 20, maxWidth: 640 }}>
+    <ActionForm action={action} style={{ marginTop: 20, maxWidth: 640 }}>
       <input type="hidden" name="partner_id" value={partnerId} />
       <input type="hidden" name="period_to" value={to} />
       <FormMessage state={state} />
@@ -23,6 +23,6 @@ export default function RecordSettlementForm({ partnerId, to, amount, today }: {
       </div>
       <label className="pp-row pp-muted" style={{ gap: 6, marginBottom: 14 }}><input type="checkbox" name="notify" defaultChecked /> Email a receipt to the partner</label>
       <SubmitButton>Record {peso(amount, 0)} received</SubmitButton>
-    </form>
+    </ActionForm>
   )
 }

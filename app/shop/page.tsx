@@ -1,8 +1,8 @@
-﻿export const dynamic = 'force-dynamic'
+export const dynamic = 'force-dynamic'
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { supabaseAdmin } from '@/lib/supabase'
+import { db } from '@/lib/db'
 import RestockForm from '@/components/RestockForm'
 import type { Metadata } from 'next'
 
@@ -13,8 +13,7 @@ export const metadata: Metadata = {
 }
 
 export default async function ShopPage() {
-  const { data: products } = await supabaseAdmin()
-    .from('sensare_products').select('*').eq('is_active', true).order('sort_order')
+  const products = await db()`select * from sensare_products where is_active order by sort_order`
 
   return (
     <div style={{ paddingTop: 72 }}>

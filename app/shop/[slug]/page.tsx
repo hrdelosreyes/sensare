@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
-import { supabaseAdmin } from '@/lib/supabase'
+import { db, one } from '@/lib/db'
 import CheckoutButton from '@/components/CheckoutButton'
 import RestockForm from '@/components/RestockForm'
 import JsonLd from '@/components/JsonLd'
@@ -19,7 +19,7 @@ function productImage(slug: string): string {
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params
-  const { data } = await supabaseAdmin().from('sensare_products').select('name, description').eq('slug', slug).single()
+  const data = await one(db()<{ name: string; description: string | undefined }[]>`select name, description from sensare_products where slug = ${slug}`)
   if (!data) return {}
   const image = productImage(slug)
   return {
@@ -55,8 +55,10 @@ const faqs = [
 
 export default async function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
-  const { data: product } = await supabaseAdmin()
-    .from('sensare_products').select('*').eq('slug', slug).eq('is_active', true).single()
+  const product = await one(db()<{
+    id: string; slug: string; name: string; tagline: string | null; description: string
+    price_php: number; compare_at_price_php: number | null; stock_qty: number
+  }[]>`select * from sensare_products where slug = ${slug} and is_active`)
 
   if (!product) notFound()
 
@@ -117,7 +119,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
 
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 32 }}>
             <span style={{ fontFamily: 'PlayfairDisplay', fontWeight: 700, fontSize: 36, color: 'var(--rose-gold)' }}>₱{product.price_php.toFixed(0)}</span>
-            {hasDiscount && <span style={{ fontFamily: 'PlayfairDisplay', fontSize: 18, color: 'var(--text-muted)', textDecoration: 'line-through' }}>₱{product.compare_at_price_php.toFixed(0)}</span>}
+            {hasDiscount && <span style={{ fontFamily: 'PlayfairDisplay', fontSize: 18, color: 'var(--text-muted)', textDecoration: 'line-through' }}>₱{Number(product.compare_at_price_php).toFixed(0)}</span>}
           </div>
 
           {/* Usage note */}

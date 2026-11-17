@@ -1,5 +1,5 @@
 import { requireApprovedPartnerPage } from '@/lib/auth'
-import { supabaseAdmin } from '@/lib/supabase'
+import { db } from '@/lib/db'
 import { getLocations, getSetting } from '@/lib/partner-data'
 import { getConsignmentState, previewSettlement } from '@/lib/consignment'
 import { balance, fmtDate, isIsoDate, locationLabel, manilaToday, peso, PAYMENT_METHOD, type PartnerOrder, type Settlement } from '@/lib/partner'
@@ -10,16 +10,13 @@ export default async function ConsignmentPage({ searchParams }: { searchParams: 
   const partner = await requireApprovedPartnerPage()
   const sp = await searchParams
   const today = manilaToday()
-  const db = supabaseAdmin()
-  const [state, locations, bank, { data: settlementsData }, { data: ordersData }] = await Promise.all([
+  const [state, locations, bank, settlements, orders] = await Promise.all([
     getConsignmentState(partner),
     getLocations(partner.id, false),
     getSetting('partner_bank_details'),
-    db.from('sensare_partner_consignment_settlements').select('*').eq('partner_id', partner.id).order('period_to', { ascending: false }).limit(30),
-    db.from('sensare_partner_orders').select('*').eq('partner_id', partner.id).eq('payment_terms', 'consignment').neq('status', 'cancelled').order('created_at'),
+    db()<Settlement[]>`select * from sensare_partner_consignment_settlements where partner_id = ${partner.id} order by period_to desc, created_at desc limit 30`,
+    db()<PartnerOrder[]>`select * from sensare_partner_orders where partner_id = ${partner.id} and payment_terms = 'consignment' and status <> 'cancelled' order by created_at`,
   ])
-  const settlements = (settlementsData ?? []) as Settlement[]
-  const orders = (ordersData ?? []) as PartnerOrder[]
   const locName = new Map(locations.map(l => [l.id, locationLabel(l)]))
 
   const from = state.nextFrom

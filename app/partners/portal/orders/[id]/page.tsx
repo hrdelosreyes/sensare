@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { requireApprovedPartnerPage } from '@/lib/auth'
-import { supabaseAdmin } from '@/lib/supabase'
+import { db, one } from '@/lib/db'
 import { getSetting } from '@/lib/partner-data'
 import { balance, fmtDate, isOverdue, locationLabel, manilaToday, peso, PAYMENT_METHOD, PAYMENT_TERMS, PAYMENT_TERMS_HELP, type OrderItem, type PartnerOrder, type Payment } from '@/lib/partner'
 import { OrderStatusBadge, PaymentStatusBadge } from '@/components/portal/ui'
@@ -15,19 +15,24 @@ export default async function OrderDetailPage({ params, searchParams }: {
   const partner = await requireApprovedPartnerPage()
   const { id } = await params
   const sp = await searchParams
-  const db = supabaseAdmin()
-  const { data: order } = await db.from('sensare_partner_orders').select('*').eq('id', id).eq('partner_id', partner.id).maybeSingle()
+  const sql = db()
+  const order = /^[0-9a-f-]{36}$/i.test(id)
+    ? await one(sql<PartnerOrder[]>`select * from sensare_partner_orders where id = ${id} and partner_id = ${partner.id}`)
+    : null
   if (!order) notFound()
   const o = order as PartnerOrder
-  const [{ data: items }, { data: payments }, bankDetails, { data: location }, { data: siblings }] = await Promise.all([
-    db.from('sensare_partner_order_items').select('*').eq('order_id', o.id),
-    db.from('sensare_partner_payments').select('*').eq('order_id', o.id).order('created_at', { ascending: false }),
+  const [items, payments, bankDetails, location, siblings] = await Promise.all([
+    sql<OrderItem[]>`select * from sensare_partner_order_items where order_id = ${o.id}`,
+    sql<Payment[]>`select * from sensare_partner_payments where order_id = ${o.id} order by created_at desc`,
     getSetting('partner_bank_details'),
-    db.from('sensare_partner_locations').select('name, city').eq('id', o.location_id).maybeSingle(),
-    db.from('sensare_partner_orders').select('id, order_number, sensare_partner_locations(name)').eq('order_group_id', o.order_group_id).neq('id', o.id),
+    one(sql<{ name: string; city: string | null }[]>`select name, city from sensare_partner_locations where id = ${o.location_id}`),
+    sql<{ id: string; order_number: string; location_name: string }[]>`
+      select o.id, o.order_number, l.name as location_name from sensare_partner_orders o
+      join sensare_partner_locations l on l.id = o.location_id
+      where o.order_group_id = ${o.order_group_id} and o.id <> ${o.id}`,
   ])
   const due = balance(o)
-  const visiblePayments = ((payments ?? []) as Payment[]).filter(p => !(p.method === 'hitpay' && p.status !== 'confirmed') && !(p.settlement_id && p.status !== 'confirmed' && p.status !== 'pending'))
+  const visiblePayments = payments.filter(p => !(p.method === 'hitpay' && p.status !== 'confirmed') && !(p.settlement_id && p.status !== 'confirmed' && p.status !== 'pending'))
 
   const timeline = [
     { label: 'Submitted', at: o.created_at },
@@ -67,7 +72,7 @@ export default async function OrderDetailPage({ params, searchParams }: {
             <table className="pp-table">
               <thead><tr><th>Product</th><th className="pp-num">Cases</th><th className="pp-num">Boxes</th><th className="pp-num">Case price</th><th className="pp-num">Total</th></tr></thead>
               <tbody>
-                {((items ?? []) as OrderItem[]).map(i => (
+                {items.map(i => (
                   <tr key={i.id}><td>{i.product_name}</td><td className="pp-num">{i.case_qty}</td><td className="pp-num">{i.case_qty * i.case_size}</td><td className="pp-num">{peso(i.case_price_php)}</td><td className="pp-num">{peso(i.line_total_php)}</td></tr>
                 ))}
               </tbody>
@@ -90,10 +95,9 @@ export default async function OrderDetailPage({ params, searchParams }: {
               <dt>Due date</dt><dd>{o.due_date ? fmtDate(o.due_date) : o.payment_terms === 'consignment' ? 'As units sell' : 'Set on delivery'}</dd>
               <dt>Branch</dt><dd>{location ? locationLabel(location) : '—'}</dd>
               <dt>Deliver to</dt><dd style={{ whiteSpace: 'pre-line' }}>{o.shipping_address || '—'}</dd>
-              {(siblings?.length ?? 0) > 0 && <><dt>Same order</dt><dd>{siblings!.map((x, i) => {
-                const ln = x.sensare_partner_locations as unknown as { name: string } | null
-                return <span key={x.id}>{i > 0 && ', '}<Link className="pp-link" href={`/partners/portal/orders/${x.id}`}>{x.order_number}</Link>{ln ? ` (${ln.name})` : ''}</span>
-              })}</dd></>}
+              {siblings.length > 0 && <><dt>Same order</dt><dd>{siblings.map((x, i) => (
+                <span key={x.id}>{i > 0 && ', '}<Link className="pp-link" href={`/partners/portal/orders/${x.id}`}>{x.order_number}</Link> ({x.location_name})</span>
+              ))}</dd></>}
               {o.tracking_info && <><dt>Tracking</dt><dd>{o.tracking_info}</dd></>}
               {o.partner_notes && <><dt>Your notes</dt><dd>{o.partner_notes}</dd></>}
             </dl>

@@ -1,5 +1,5 @@
 import 'server-only'
-import { supabaseAdmin } from './supabase'
+import { db } from './db'
 import type { Partner, PartnerOrder } from './partner'
 
 export const PARTNER_REF_PREFIX = 'spo_'
@@ -42,10 +42,9 @@ export async function createHitpayPayment({ order, partner, amount, returnPath }
 }): Promise<string> {
   const reference = `${PARTNER_REF_PREFIX}${order.id.slice(0, 8)}_${Date.now()}`
   const hitpay = await createHitpayRequest({ reference, amount, purpose: `Sensarè partner order ${order.order_number}`, partner, returnPath })
-  const { error } = await supabaseAdmin().from('sensare_partner_payments').insert({
+  await db()`insert into sensare_partner_payments ${db()({
     order_id: order.id, partner_id: partner.id, amount_php: amount, method: 'hitpay',
     status: 'pending', reference, hitpay_payment_id: hitpay.id,
-  })
-  if (error) throw new Error(`Could not record payment: ${error.message}`)
+  })}`
   return hitpay.url
 }

@@ -1,16 +1,52 @@
--- ============================================================================
--- Sensarè Partner Portal — v2
---   * Branches / delivery locations (inventory & sales tracked per branch;
---     one order request can be split across branches)
---   * Auto-generated order suggestions (sales trend + stock + lead time)
---   * Consignment settlements (pay for units sold over a period, default 7 days)
---
--- Run in Supabase → SQL Editor AFTER partner_portal.sql. Safe to re-run.
--- ============================================================================
+-- Sensarè partner & reseller portal (Neon / plain Postgres).
+-- Applied automatically by scripts/migrate.mjs on deploy.
 
--- ---------------------------------------------------------------------------
--- Locations (branches)
--- ---------------------------------------------------------------------------
+alter table sensare_products add column if not exists case_size integer not null default 12;
+alter table sensare_products add column if not exists wholesale_case_price_php numeric(10,2);
+alter table sensare_products add column if not exists is_wholesale boolean not null default true;
+
+create table if not exists sensare_settings (
+  key text primary key,
+  value text,
+  updated_at timestamptz not null default now()
+);
+insert into sensare_settings (key, value) values
+  ('partner_bank_details', 'Bank: (set in Admin → Partner Settings)'),
+  ('partner_lead_time_days', '14'),
+  ('partner_cover_days', '14'),
+  ('partner_safety_days', '7')
+on conflict (key) do nothing;
+
+-- Partners --------------------------------------------------------------------
+create table if not exists sensare_partners (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid unique not null references sensare_users(id) on delete cascade,
+  business_name text not null,
+  contact_name text not null,
+  email text not null,
+  phone text,
+  tin text,
+  business_type text,
+  address text,
+  city text,
+  province text,
+  sales_channels text,
+  expected_monthly_cases integer,
+  message text,
+  status text not null default 'pending'
+    check (status in ('pending', 'approved', 'rejected', 'suspended')),
+  default_payment_terms text not null default 'cod'
+    check (default_payment_terms in ('cod', 'consignment', 'net30')),
+  consignment_period_days integer not null default 7 check (consignment_period_days between 1 and 90),
+  consignment_reminded_at timestamptz,
+  admin_notes text,
+  reviewed_by uuid references sensare_users(id) on delete set null,
+  reviewed_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create index if not exists sensare_partners_status_idx on sensare_partners(status);
+
 create table if not exists sensare_partner_locations (
   id uuid primary key default gen_random_uuid(),
   partner_id uuid not null references sensare_partners(id) on delete cascade,
@@ -31,94 +67,178 @@ create index if not exists sensare_partner_locations_partner_idx on sensare_part
 create unique index if not exists sensare_partner_locations_default_idx
   on sensare_partner_locations(partner_id) where is_default;
 
--- Every partner gets a default "Main" location from their application address.
-create or replace function sensare_partner_default_location()
-returns trigger language plpgsql as $$
-begin
-  insert into sensare_partner_locations (partner_id, name, contact_name, phone, address, city, province, is_default)
-  values (new.id, 'Main', new.contact_name, new.phone, new.address, new.city, new.province, true);
-  return new;
-end;
-$$;
-drop trigger if exists sensare_partners_default_location on sensare_partners;
-create trigger sensare_partners_default_location
-  after insert on sensare_partners
-  for each row execute function sensare_partner_default_location();
+create table if not exists sensare_partner_prices (
+  partner_id uuid not null references sensare_partners(id) on delete cascade,
+  product_id uuid not null references sensare_products(id) on delete cascade,
+  case_price_php numeric(10,2),
+  is_available boolean not null default true,
+  updated_at timestamptz not null default now(),
+  primary key (partner_id, product_id)
+);
 
-insert into sensare_partner_locations (partner_id, name, contact_name, phone, address, city, province, is_default)
-select p.id, 'Main', p.contact_name, p.phone, p.address, p.city, p.province, true
-from sensare_partners p
-where not exists (select 1 from sensare_partner_locations l where l.partner_id = p.id);
+-- Orders ----------------------------------------------------------------------
+create sequence if not exists sensare_partner_order_seq;
 
--- Orders: one order per delivery location; orders placed together share a group.
-alter table sensare_partner_orders add column if not exists location_id uuid;
-alter table sensare_partner_orders add column if not exists order_group_id uuid;
-alter table sensare_partner_orders add column if not exists suggestion_id uuid;
-update sensare_partner_orders o set location_id = l.id
-from sensare_partner_locations l
-where o.location_id is null and l.partner_id = o.partner_id and l.is_default;
-update sensare_partner_orders set order_group_id = id where order_group_id is null;
-alter table sensare_partner_orders alter column location_id set not null;
-alter table sensare_partner_orders alter column order_group_id set not null;
-alter table sensare_partner_orders alter column order_group_id set default gen_random_uuid();
-do $$ begin
-  alter table sensare_partner_orders add constraint sensare_partner_orders_location_fk
-    foreign key (location_id, partner_id) references sensare_partner_locations(id, partner_id);
-exception when duplicate_object then null; end $$;
+create table if not exists sensare_partner_orders (
+  id uuid primary key default gen_random_uuid(),
+  order_number text unique not null
+    default ('SPO-' || to_char(now(), 'YYYY') || '-' || lpad(nextval('sensare_partner_order_seq')::text, 5, '0')),
+  partner_id uuid not null references sensare_partners(id) on delete restrict,
+  location_id uuid not null,
+  order_group_id uuid not null default gen_random_uuid(),
+  suggestion_id uuid,
+  status text not null default 'submitted'
+    check (status in ('submitted', 'confirmed', 'shipped', 'delivered', 'cancelled')),
+  payment_terms text not null check (payment_terms in ('cod', 'consignment', 'net30')),
+  subtotal_php numeric(12,2) not null default 0,
+  shipping_php numeric(12,2) not null default 0,
+  total_php numeric(12,2) not null default 0,
+  amount_paid_php numeric(12,2) not null default 0,
+  payment_status text not null default 'unpaid' check (payment_status in ('unpaid', 'partial', 'paid')),
+  due_date date,
+  shipping_address text,
+  partner_notes text,
+  admin_notes text,
+  tracking_info text,
+  stock_deducted boolean not null default false,
+  confirmed_at timestamptz,
+  shipped_at timestamptz,
+  delivered_at timestamptz,
+  cancelled_at timestamptz,
+  created_by uuid references sensare_users(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  foreign key (location_id, partner_id) references sensare_partner_locations(id, partner_id)
+);
+create index if not exists sensare_partner_orders_partner_idx on sensare_partner_orders(partner_id, created_at desc);
+create index if not exists sensare_partner_orders_status_idx on sensare_partner_orders(status);
 create index if not exists sensare_partner_orders_group_idx on sensare_partner_orders(order_group_id);
 
--- Sales and inventory are per location.
-alter table sensare_partner_sales add column if not exists location_id uuid;
-update sensare_partner_sales s set location_id = l.id
-from sensare_partner_locations l
-where s.location_id is null and l.partner_id = s.partner_id and l.is_default;
-alter table sensare_partner_sales alter column location_id set not null;
-do $$ begin
-  alter table sensare_partner_sales add constraint sensare_partner_sales_location_fk
-    foreign key (location_id, partner_id) references sensare_partner_locations(id, partner_id);
-exception when duplicate_object then null; end $$;
-alter table sensare_partner_sales drop constraint if exists sensare_partner_sales_partner_id_sale_date_product_id_key;
-do $$ begin
-  alter table sensare_partner_sales add constraint sensare_partner_sales_unique_day
-    unique (partner_id, location_id, sale_date, product_id);
-exception when duplicate_object or duplicate_table then null; end $$;
+create table if not exists sensare_partner_order_items (
+  id uuid primary key default gen_random_uuid(),
+  order_id uuid not null references sensare_partner_orders(id) on delete cascade,
+  product_id uuid not null references sensare_products(id) on delete restrict,
+  product_name text not null,
+  case_qty integer not null check (case_qty > 0),
+  case_size integer not null check (case_size > 0),
+  case_price_php numeric(10,2) not null check (case_price_php >= 0),
+  line_total_php numeric(12,2) not null
+);
+create index if not exists sensare_partner_order_items_order_idx on sensare_partner_order_items(order_id);
 
-alter table sensare_partner_inventory_movements add column if not exists location_id uuid;
-update sensare_partner_inventory_movements m set location_id = coalesce(
-  (select o.location_id from sensare_partner_orders o where o.id = m.order_id),
-  (select s.location_id from sensare_partner_sales s where s.id = m.sale_id),
-  (select l.id from sensare_partner_locations l where l.partner_id = m.partner_id and l.is_default))
-where m.location_id is null;
-alter table sensare_partner_inventory_movements alter column location_id set not null;
-do $$ begin
-  alter table sensare_partner_inventory_movements add constraint sensare_partner_inv_location_fk
-    foreign key (location_id, partner_id) references sensare_partner_locations(id, partner_id);
-exception when duplicate_object then null; end $$;
+-- Consignment settlements & payments ---------------------------------------------
+create table if not exists sensare_partner_consignment_settlements (
+  id uuid primary key default gen_random_uuid(),
+  partner_id uuid not null references sensare_partners(id) on delete cascade,
+  period_from date not null,
+  period_to date not null check (period_to >= period_from),
+  units integer not null default 0,
+  amount_php numeric(12,2) not null default 0,
+  method text not null check (method in ('hitpay', 'bank_transfer', 'cash', 'check', 'other')),
+  status text not null default 'pending' check (status in ('pending', 'confirmed', 'rejected', 'failed')),
+  reference text,
+  hitpay_payment_id text,
+  notes text,
+  paid_on date,
+  created_by uuid references sensare_users(id) on delete set null,
+  confirmed_by uuid references sensare_users(id) on delete set null,
+  confirmed_at timestamptz,
+  created_at timestamptz not null default now()
+);
+create index if not exists sensare_partner_settlements_partner_idx on sensare_partner_consignment_settlements(partner_id, period_to desc);
+create index if not exists sensare_partner_settlements_ref_idx on sensare_partner_consignment_settlements(reference);
+
+create table if not exists sensare_partner_consignment_lines (
+  id uuid primary key default gen_random_uuid(),
+  settlement_id uuid not null references sensare_partner_consignment_settlements(id) on delete cascade,
+  order_item_id uuid not null references sensare_partner_order_items(id) on delete cascade,
+  order_id uuid not null references sensare_partner_orders(id) on delete cascade,
+  location_id uuid not null references sensare_partner_locations(id),
+  product_id uuid not null references sensare_products(id),
+  units integer not null check (units > 0),
+  unit_price_php numeric(12,4) not null,
+  amount_php numeric(12,2) not null
+);
+create index if not exists sensare_partner_consignment_lines_item_idx on sensare_partner_consignment_lines(order_item_id);
+
+create table if not exists sensare_partner_payments (
+  id uuid primary key default gen_random_uuid(),
+  order_id uuid not null references sensare_partner_orders(id) on delete cascade,
+  partner_id uuid not null references sensare_partners(id) on delete cascade,
+  settlement_id uuid references sensare_partner_consignment_settlements(id) on delete cascade,
+  amount_php numeric(12,2) not null check (amount_php > 0),
+  method text not null check (method in ('hitpay', 'bank_transfer', 'cash', 'check', 'return_credit', 'other')),
+  status text not null default 'pending' check (status in ('pending', 'confirmed', 'rejected', 'failed')),
+  reference text,
+  hitpay_payment_id text,
+  notes text,
+  paid_on date,
+  created_by uuid references sensare_users(id) on delete set null,
+  confirmed_by uuid references sensare_users(id) on delete set null,
+  confirmed_at timestamptz,
+  created_at timestamptz not null default now()
+);
+create index if not exists sensare_partner_payments_order_idx on sensare_partner_payments(order_id);
+create index if not exists sensare_partner_payments_settlement_idx on sensare_partner_payments(settlement_id);
+create index if not exists sensare_partner_payments_ref_idx on sensare_partner_payments(reference);
+
+-- Sales & inventory (per location) ---------------------------------------------------
+create table if not exists sensare_partner_sales (
+  id uuid primary key default gen_random_uuid(),
+  partner_id uuid not null references sensare_partners(id) on delete cascade,
+  location_id uuid not null,
+  product_id uuid not null references sensare_products(id) on delete restrict,
+  sale_date date not null,
+  units_sold integer not null check (units_sold >= 0),
+  unit_price_php numeric(10,2),
+  notes text,
+  created_by uuid references sensare_users(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  foreign key (location_id, partner_id) references sensare_partner_locations(id, partner_id),
+  constraint sensare_partner_sales_unique_day unique (partner_id, location_id, sale_date, product_id)
+);
+create index if not exists sensare_partner_sales_partner_date_idx on sensare_partner_sales(partner_id, sale_date);
+
+create table if not exists sensare_partner_inventory_movements (
+  id uuid primary key default gen_random_uuid(),
+  partner_id uuid not null references sensare_partners(id) on delete cascade,
+  location_id uuid not null,
+  product_id uuid not null references sensare_products(id) on delete restrict,
+  qty_change integer not null,
+  movement_type text not null check (movement_type in ('delivery', 'sale', 'adjustment')),
+  reason text,
+  order_id uuid references sensare_partner_orders(id) on delete set null,
+  sale_id uuid references sensare_partner_sales(id) on delete cascade,
+  batch_code text,
+  expiry_date date,
+  notes text,
+  movement_date date not null default ((now() at time zone 'Asia/Manila')::date),
+  created_by uuid references sensare_users(id) on delete set null,
+  created_at timestamptz not null default now(),
+  foreign key (location_id, partner_id) references sensare_partner_locations(id, partner_id)
+);
 create index if not exists sensare_partner_inv_loc_idx on sensare_partner_inventory_movements(partner_id, location_id, product_id);
+create unique index if not exists sensare_partner_inv_sale_idx on sensare_partner_inventory_movements(sale_id) where sale_id is not null;
 
-drop view if exists sensare_partner_stock;
-create view sensare_partner_stock
-with (security_invoker = true) as
+create or replace view sensare_partner_stock as
 select partner_id, location_id, product_id, sum(qty_change)::integer as on_hand,
        min(movement_date) filter (where movement_type = 'delivery') as first_received
 from sensare_partner_inventory_movements
 group by partner_id, location_id, product_id;
 
--- ---------------------------------------------------------------------------
--- Order suggestions
--- ---------------------------------------------------------------------------
+-- Order suggestions ---------------------------------------------------------------------
 create table if not exists sensare_partner_order_suggestions (
   id uuid primary key default gen_random_uuid(),
   partner_id uuid not null references sensare_partners(id) on delete cascade,
-  status text not null default 'open'
-    check (status in ('open', 'approved', 'dismissed', 'superseded')),
+  status text not null default 'open' check (status in ('open', 'approved', 'dismissed', 'superseded')),
   lead_time_days integer not null,
   cover_days integer not null,
   safety_days integer not null,
   generated_at timestamptz not null default now(),
   notified_at timestamptz,
   decided_at timestamptz,
-  decided_by uuid references auth.users(id) on delete set null,
+  decided_by uuid references sensare_users(id) on delete set null,
   order_group_id uuid,
   created_at timestamptz not null default now()
 );
@@ -141,63 +261,73 @@ create table if not exists sensare_partner_order_suggestion_lines (
 );
 create index if not exists sensare_partner_suggestion_lines_idx on sensare_partner_order_suggestion_lines(suggestion_id);
 
-insert into sensare_settings (key, value) values
-  ('partner_lead_time_days', '14'),
-  ('partner_cover_days', '14'),
-  ('partner_safety_days', '7')
-on conflict (key) do nothing;
+-- ================================================================================
+-- Functions & triggers
+-- ================================================================================
 
--- ---------------------------------------------------------------------------
--- Consignment settlements
--- ---------------------------------------------------------------------------
-alter table sensare_partners add column if not exists consignment_period_days integer not null default 7;
-alter table sensare_partners add column if not exists consignment_reminded_at timestamptz;
-do $$ begin
-  alter table sensare_partners add constraint sensare_partners_consignment_period_chk
-    check (consignment_period_days between 1 and 90);
-exception when duplicate_object then null; end $$;
 
-create table if not exists sensare_partner_consignment_settlements (
-  id uuid primary key default gen_random_uuid(),
-  partner_id uuid not null references sensare_partners(id) on delete cascade,
-  period_from date not null,
-  period_to date not null check (period_to >= period_from),
-  units integer not null default 0,
-  amount_php numeric(12,2) not null default 0,
-  method text not null check (method in ('hitpay', 'bank_transfer', 'cash', 'check', 'other')),
-  status text not null default 'pending' check (status in ('pending', 'confirmed', 'rejected', 'failed')),
-  reference text,
-  hitpay_payment_id text,
-  notes text,
-  paid_on date,
-  created_by uuid references auth.users(id) on delete set null,
-  confirmed_by uuid references auth.users(id) on delete set null,
-  confirmed_at timestamptz,
-  created_at timestamptz not null default now()
-);
-create index if not exists sensare_partner_settlements_partner_idx on sensare_partner_consignment_settlements(partner_id, period_to desc);
-create index if not exists sensare_partner_settlements_ref_idx on sensare_partner_consignment_settlements(reference);
+create or replace function sensare_partner_default_location()
+returns trigger language plpgsql as $$
+begin
+  insert into sensare_partner_locations (partner_id, name, contact_name, phone, address, city, province, is_default)
+  values (new.id, 'Main', new.contact_name, new.phone, new.address, new.city, new.province, true);
+  return new;
+end;
+$$;
 
-create table if not exists sensare_partner_consignment_lines (
-  id uuid primary key default gen_random_uuid(),
-  settlement_id uuid not null references sensare_partner_consignment_settlements(id) on delete cascade,
-  order_item_id uuid not null references sensare_partner_order_items(id) on delete cascade,
-  order_id uuid not null references sensare_partner_orders(id) on delete cascade,
-  location_id uuid not null references sensare_partner_locations(id),
-  product_id uuid not null references sensare_products(id),
-  units integer not null check (units > 0),
-  unit_price_php numeric(12,4) not null,
-  amount_php numeric(12,2) not null
-);
-create index if not exists sensare_partner_consignment_lines_item_idx on sensare_partner_consignment_lines(order_item_id);
+drop trigger if exists sensare_partners_default_location on sensare_partners;
+create trigger sensare_partners_default_location
+  after insert on sensare_partners
+  for each row execute function sensare_partner_default_location();
 
-alter table sensare_partner_payments add column if not exists settlement_id uuid
-  references sensare_partner_consignment_settlements(id) on delete cascade;
-create index if not exists sensare_partner_payments_settlement_idx on sensare_partner_payments(settlement_id);
--- A HitPay settlement reference is shared by several order payments.
-drop index if exists sensare_partner_payments_ref_idx;
+create or replace function sensare_partner_sync_order_payment()
+returns trigger language plpgsql as $$
+declare
+  v_order_id uuid := coalesce(new.order_id, old.order_id);
+  v_paid numeric(12,2);
+  v_total numeric(12,2);
+begin
+  select coalesce(sum(amount_php), 0) into v_paid
+  from sensare_partner_payments
+  where order_id = v_order_id and status = 'confirmed';
 
--- Settlement status drives the status of its order payments.
+  select total_php into v_total from sensare_partner_orders where id = v_order_id;
+
+  update sensare_partner_orders
+  set amount_paid_php = v_paid,
+      payment_status = case
+        when v_paid <= 0 then 'unpaid'
+        when v_paid >= v_total then 'paid'
+        else 'partial' end,
+      updated_at = now()
+  where id = v_order_id;
+  return null;
+end;
+$$;
+
+drop trigger if exists sensare_partner_payments_sync on sensare_partner_payments;
+create trigger sensare_partner_payments_sync
+  after insert or update or delete on sensare_partner_payments
+  for each row execute function sensare_partner_sync_order_payment();
+
+create or replace function sensare_partner_order_total_changed()
+returns trigger language plpgsql as $$
+begin
+  if new.total_php is distinct from old.total_php then
+    new.payment_status := case
+      when new.amount_paid_php <= 0 then 'unpaid'
+      when new.amount_paid_php >= new.total_php then 'paid'
+      else 'partial' end;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists sensare_partner_orders_total on sensare_partner_orders;
+create trigger sensare_partner_orders_total
+  before update of total_php on sensare_partner_orders
+  for each row execute function sensare_partner_order_total_changed();
+
 create or replace function sensare_partner_settlement_status_sync()
 returns trigger language plpgsql as $$
 begin
@@ -210,18 +340,69 @@ begin
   return new;
 end;
 $$;
+
 drop trigger if exists sensare_partner_settlement_status on sensare_partner_consignment_settlements;
 create trigger sensare_partner_settlement_status
   after update of status on sensare_partner_consignment_settlements
   for each row execute function sensare_partner_settlement_status_sync();
 
--- ============================================================================
--- Functions (replace v1 versions that did not know about locations)
--- ============================================================================
-drop function if exists sensare_partner_record_sale(uuid, uuid, date, integer, numeric, text, uuid);
-drop function if exists sensare_partner_adjust_inventory(uuid, uuid, integer, text, text, text, date, uuid);
-drop function if exists sensare_partner_report(uuid, date, date);
-drop function if exists sensare_partner_report_daily(uuid, date, date);
+create or replace function sensare_partner_confirm_order(p_order_id uuid)
+returns void language plpgsql as $$
+declare
+  v_order sensare_partner_orders%rowtype;
+  r record;
+  v_stock integer;
+begin
+  select * into v_order from sensare_partner_orders where id = p_order_id for update;
+  if not found then raise exception 'Order not found'; end if;
+  if v_order.status <> 'submitted' then
+    raise exception 'Only submitted orders can be confirmed (current: %)', v_order.status;
+  end if;
+
+  for r in
+    select product_id, product_name, sum(case_qty * case_size)::integer as units
+    from sensare_partner_order_items where order_id = p_order_id
+    group by product_id, product_name
+  loop
+    select stock_qty into v_stock from sensare_products where id = r.product_id for update;
+    if v_stock < r.units then
+      raise exception 'Not enough warehouse stock for % (need %, have %)', r.product_name, r.units, v_stock;
+    end if;
+    update sensare_products set stock_qty = stock_qty - r.units where id = r.product_id;
+  end loop;
+
+  update sensare_partner_orders
+  set status = 'confirmed', stock_deducted = true, confirmed_at = now(), updated_at = now()
+  where id = p_order_id;
+end;
+$$;
+
+create or replace function sensare_partner_cancel_order(p_order_id uuid)
+returns void language plpgsql as $$
+declare
+  v_order sensare_partner_orders%rowtype;
+  r record;
+begin
+  select * into v_order from sensare_partner_orders where id = p_order_id for update;
+  if not found then raise exception 'Order not found'; end if;
+  if v_order.status in ('delivered', 'cancelled') then
+    raise exception 'Order cannot be cancelled (current: %)', v_order.status;
+  end if;
+
+  if v_order.stock_deducted then
+    for r in
+      select product_id, sum(case_qty * case_size)::integer as units
+      from sensare_partner_order_items where order_id = p_order_id group by product_id
+    loop
+      update sensare_products set stock_qty = stock_qty + r.units where id = r.product_id;
+    end loop;
+  end if;
+
+  update sensare_partner_orders
+  set status = 'cancelled', stock_deducted = false, cancelled_at = now(), updated_at = now()
+  where id = p_order_id;
+end;
+$$;
 
 create or replace function sensare_partner_deliver_order(p_order_id uuid, p_user_id uuid)
 returns void language plpgsql as $$
@@ -352,7 +533,6 @@ begin
 end;
 $$;
 
--- Report: per partner × location × product stock flow for a date range (units).
 create or replace function sensare_partner_report(p_partner_id uuid, p_location_id uuid, p_from date, p_to date)
 returns table (
   partner_id uuid, location_id uuid, product_id uuid,
@@ -399,7 +579,6 @@ language sql stable as $$
   group by s.sale_date order by s.sale_date;
 $$;
 
--- Daily sales history for forecasting (per location × product × day).
 create or replace function sensare_partner_sales_history(p_partner_id uuid, p_from date)
 returns table (location_id uuid, product_id uuid, sale_date date, units integer)
 language sql stable as $$
@@ -409,11 +588,6 @@ language sql stable as $$
   group by location_id, product_id, sale_date;
 $$;
 
--- ---------------------------------------------------------------------------
--- Consignment: which consignment units were sold in a period, and what they cost.
--- Sales at each location are matched to that location's delivered consignment
--- stock, oldest delivery first, skipping units already in a settlement.
--- ---------------------------------------------------------------------------
 create or replace function sensare_partner_consignment_preview(p_partner_id uuid, p_from date, p_to date)
 returns table (
   order_item_id uuid, order_id uuid, order_number text, location_id uuid, product_id uuid,
@@ -461,8 +635,6 @@ begin
 end;
 $$;
 
--- Create a settlement for a period: lines + one payment per order (capped at
--- the order's open balance). Returns the settlement id.
 create or replace function sensare_partner_create_settlement(
   p_partner_id uuid, p_from date, p_to date, p_method text, p_status text,
   p_reference text, p_notes text, p_paid_on date, p_user_id uuid
@@ -538,54 +710,3 @@ begin
   return v_id;
 end;
 $$;
-
--- ---------------------------------------------------------------------------
--- Permissions & RLS
--- ---------------------------------------------------------------------------
-revoke execute on function sensare_partner_deliver_order(uuid, uuid) from public, anon, authenticated;
-revoke execute on function sensare_partner_record_sale(uuid, uuid, uuid, date, integer, numeric, text, uuid) from public, anon, authenticated;
-revoke execute on function sensare_partner_adjust_inventory(uuid, uuid, uuid, integer, text, text, text, date, uuid) from public, anon, authenticated;
-revoke execute on function sensare_partner_report(uuid, uuid, date, date) from public, anon, authenticated;
-revoke execute on function sensare_partner_report_daily(uuid, uuid, date, date) from public, anon, authenticated;
-revoke execute on function sensare_partner_sales_history(uuid, date) from public, anon, authenticated;
-revoke execute on function sensare_partner_consignment_preview(uuid, date, date) from public, anon, authenticated;
-revoke execute on function sensare_partner_create_settlement(uuid, date, date, text, text, text, text, date, uuid) from public, anon, authenticated;
-revoke execute on function sensare_partner_default_location() from public, anon, authenticated;
-revoke execute on function sensare_partner_settlement_status_sync() from public, anon, authenticated;
-
-alter table sensare_partner_locations enable row level security;
-alter table sensare_partner_order_suggestions enable row level security;
-alter table sensare_partner_order_suggestion_lines enable row level security;
-alter table sensare_partner_consignment_settlements enable row level security;
-alter table sensare_partner_consignment_lines enable row level security;
-
-drop policy if exists "Partner reads own locations" on sensare_partner_locations;
-create policy "Partner reads own locations" on sensare_partner_locations
-  for select to authenticated
-  using (partner_id in (select id from sensare_partners where user_id = auth.uid() and status = 'approved'));
-
-drop policy if exists "Partner reads own suggestions" on sensare_partner_order_suggestions;
-create policy "Partner reads own suggestions" on sensare_partner_order_suggestions
-  for select to authenticated
-  using (partner_id in (select id from sensare_partners where user_id = auth.uid() and status = 'approved'));
-
-drop policy if exists "Partner reads own suggestion lines" on sensare_partner_order_suggestion_lines;
-create policy "Partner reads own suggestion lines" on sensare_partner_order_suggestion_lines
-  for select to authenticated
-  using (suggestion_id in (
-    select s.id from sensare_partner_order_suggestions s
-    join sensare_partners p on p.id = s.partner_id
-    where p.user_id = auth.uid() and p.status = 'approved'));
-
-drop policy if exists "Partner reads own settlements" on sensare_partner_consignment_settlements;
-create policy "Partner reads own settlements" on sensare_partner_consignment_settlements
-  for select to authenticated
-  using (partner_id in (select id from sensare_partners where user_id = auth.uid() and status = 'approved'));
-
-drop policy if exists "Partner reads own settlement lines" on sensare_partner_consignment_lines;
-create policy "Partner reads own settlement lines" on sensare_partner_consignment_lines
-  for select to authenticated
-  using (settlement_id in (
-    select s.id from sensare_partner_consignment_settlements s
-    join sensare_partners p on p.id = s.partner_id
-    where p.user_id = auth.uid() and p.status = 'approved'));

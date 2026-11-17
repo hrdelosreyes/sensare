@@ -2,7 +2,7 @@
 import { useActionState } from 'react'
 import { useRouter } from 'next/navigation'
 import { saveSalesAction } from '../actions'
-import { FormMessage, SubmitButton } from '@/components/portal/forms'
+import { ActionForm, FormMessage, SubmitButton } from '@/components/portal/forms'
 import { fmtDate } from '@/lib/partner'
 
 type Row = { id: string; name: string; srp: number; onHand: number; units: number | null; price: number | null }
@@ -14,7 +14,7 @@ export default function SalesForm({ date, today, minDate, rows, locationId, loca
   const router = useRouter()
 
   return (
-    <form action={action}>
+    <ActionForm action={action}>
       <input type="hidden" name="location_id" value={locationId} />
       <div className="pp-row" style={{ justifyContent: 'space-between', marginBottom: 16 }}>
         <p className="pp-h2" style={{ marginBottom: 0 }}>{locationName ? `${locationName} · ` : ''}{fmtDate(date)}</p>
@@ -45,6 +45,6 @@ export default function SalesForm({ date, today, minDate, rows, locationId, loca
         <input className="pp-input" name="notes" maxLength={500} placeholder="Optional — e.g. weekend bazaar" /></label>
       <SubmitButton>Save sales</SubmitButton>
       </fieldset>
-    </form>
+    </ActionForm>
   )
 }

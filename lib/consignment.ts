@@ -1,5 +1,5 @@
 import 'server-only'
-import { supabaseAdmin } from './supabase'
+import { db, dbMessage, one } from './db'
 import { addDays, manilaToday, type Partner, type Settlement } from './partner'
 
 export const SETTLEMENT_REF_PREFIX = 'spc_'
@@ -19,27 +19,28 @@ export type ConsignmentState = {
   pendingOnline: boolean       // an online (HitPay) payment was started and not yet confirmed
 }
 
-const manilaDate = (ts: string) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Manila' }).format(new Date(ts))
-
 export async function getConsignmentState(partner: Pick<Partner, 'id' | 'consignment_period_days'>): Promise<ConsignmentState> {
-  const db = supabaseAdmin()
+  const sql = db()
   const periodDays = partner.consignment_period_days || 7
   // In-flight HitPay checkouts don't block a retry (the retry cancels them).
-  const [{ data: last }, { data: firstDelivery }, { count: online }] = await Promise.all([
-    db.from('sensare_partner_consignment_settlements').select('*').eq('partner_id', partner.id)
-      .or('status.eq.confirmed,and(status.eq.pending,method.neq.hitpay)')
-      .order('period_to', { ascending: false }).limit(1).maybeSingle(),
-    db.from('sensare_partner_orders').select('delivered_at').eq('partner_id', partner.id)
-      .eq('payment_terms', 'consignment').eq('status', 'delivered').order('delivered_at').limit(1).maybeSingle(),
-    db.from('sensare_partner_consignment_settlements').select('id', { count: 'exact', head: true })
-      .eq('partner_id', partner.id).eq('method', 'hitpay').eq('status', 'pending'),
+  const [last, first, online] = await Promise.all([
+    one(sql<Settlement[]>`
+      select * from sensare_partner_consignment_settlements
+      where partner_id = ${partner.id} and (status = 'confirmed' or (status = 'pending' and method <> 'hitpay'))
+      order by period_to desc limit 1`),
+    one(sql<{ d: string | null }[]>`
+      select min((delivered_at at time zone 'Asia/Manila')::date) as d from sensare_partner_orders
+      where partner_id = ${partner.id} and payment_terms = 'consignment' and status = 'delivered'`),
+    one(sql<{ n: number }[]>`
+      select count(*)::int as n from sensare_partner_consignment_settlements
+      where partner_id = ${partner.id} and method = 'hitpay' and status = 'pending'`),
   ])
-  const pendingOnline = (online ?? 0) > 0
+  const pendingOnline = (online?.n ?? 0) > 0
   const today = manilaToday()
-  if (!firstDelivery?.delivered_at) {
-    return { hasConsignment: false, nextFrom: null, defaultTo: null, periodDays, isDue: false, lastSettlement: (last as Settlement) ?? null, pendingOnline }
+  if (!first?.d) {
+    return { hasConsignment: false, nextFrom: null, defaultTo: null, periodDays, isDue: false, lastSettlement: last, pendingOnline }
   }
-  const nextFrom = last ? addDays(last.period_to, 1) : manilaDate(firstDelivery.delivered_at)
+  const nextFrom = last ? addDays(last.period_to, 1) : first.d
   const fullEnd = addDays(nextFrom, periodDays - 1)
   return {
     hasConsignment: true,
@@ -47,34 +48,35 @@ export async function getConsignmentState(partner: Pick<Partner, 'id' | 'consign
     defaultTo: nextFrom <= today ? (fullEnd < today ? fullEnd : today) : null,
     periodDays,
     isDue: fullEnd < today,
-    lastSettlement: (last as Settlement) ?? null,
+    lastSettlement: last,
     pendingOnline,
   }
 }
 
 /** Cancels the partner's unfinished HitPay settlement checkouts before a new attempt. */
 export async function cancelPendingOnlineSettlements(partnerId: string) {
-  await supabaseAdmin().from('sensare_partner_consignment_settlements')
-    .update({ status: 'failed' }).eq('partner_id', partnerId).eq('method', 'hitpay').eq('status', 'pending')
+  await db()`update sensare_partner_consignment_settlements set status = 'failed'
+    where partner_id = ${partnerId} and method = 'hitpay' and status = 'pending'`
 }
 
 export async function previewSettlement(partnerId: string, from: string, to: string): Promise<SettlementLine[]> {
-  const { data, error } = await supabaseAdmin().rpc('sensare_partner_consignment_preview', { p_partner_id: partnerId, p_from: from, p_to: to })
-  if (error) console.error('Consignment preview failed', error)
-  return ((data ?? []) as SettlementLine[]).map(l => ({ ...l, units: Number(l.units), unit_price_php: Number(l.unit_price_php), amount_php: Number(l.amount_php) }))
+  return db()<SettlementLine[]>`select * from sensare_partner_consignment_preview(${partnerId}::uuid, ${from}::date, ${to}::date)`
 }
 
 export async function createSettlement(args: {
   partnerId: string; from: string; to: string; method: string; status: 'pending' | 'confirmed'
   reference?: string | null; notes?: string | null; paidOn?: string | null; userId?: string | null
-}): Promise<{ id?: string; error?: string }> {
-  const { data, error } = await supabaseAdmin().rpc('sensare_partner_create_settlement', {
-    p_partner_id: args.partnerId, p_from: args.from, p_to: args.to, p_method: args.method, p_status: args.status,
-    p_reference: args.reference ?? null, p_notes: args.notes ?? null, p_paid_on: args.paidOn ?? null, p_user_id: args.userId ?? null,
-  })
-  if (error) {
-    const m = error.message ?? ''
+}): Promise<{ id?: string; amount?: number; error?: string }> {
+  try {
+    const row = await one(db()<{ id: string }[]>`
+      select sensare_partner_create_settlement(
+        ${args.partnerId}::uuid, ${args.from}::date, ${args.to}::date, ${args.method}::text, ${args.status}::text,
+        ${args.reference ?? null}::text, ${args.notes ?? null}::text, ${args.paidOn ?? null}::date, ${args.userId ?? null}::uuid
+      ) as id`)
+    const st = await one(db()<{ amount_php: number }[]>`select amount_php from sensare_partner_consignment_settlements where id = ${row!.id}`)
+    return { id: row!.id, amount: st?.amount_php ?? 0 }
+  } catch (e) {
+    const m = dbMessage(e)
     return { error: /^(No consignment|This period|Period )/.test(m) ? m : 'Could not create the settlement.' }
   }
-  return { id: data as string }
 }

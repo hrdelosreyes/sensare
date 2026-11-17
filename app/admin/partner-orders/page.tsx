@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { requireAdminPage } from '@/lib/auth'
-import { supabaseAdmin } from '@/lib/supabase'
+import { db } from '@/lib/db'
 import { balance, fmtDate, isOverdue, peso, PAYMENT_TERMS, type OrderStatus, type PartnerOrder } from '@/lib/partner'
 import { OrderStatusBadge, PaymentStatusBadge, Stat } from '@/components/portal/ui'
 
@@ -10,15 +10,19 @@ const FILTERS: { key: string; label: string }[] = [
   { key: 'delivered', label: 'Delivered' }, { key: 'cancelled', label: 'Cancelled' }, { key: 'all', label: 'All' },
 ]
 
-type Row = PartnerOrder & { sensare_partners: { business_name: string } | null; sensare_partner_payments: { status: string; settlement_id: string | null }[]; sensare_partner_locations: { name: string } | null }
+type Row = PartnerOrder & { business_name: string; location_name: string; pending_transfer: boolean }
 
 export default async function AdminPartnerOrdersPage({ searchParams }: { searchParams: Promise<{ f?: string }> }) {
   await requireAdminPage()
   const f = (await searchParams).f ?? 'open'
-  const { data } = await supabaseAdmin().from('sensare_partner_orders')
-    .select('*, sensare_partners(business_name), sensare_partner_payments(status, settlement_id), sensare_partner_locations(name)')
-    .order('created_at', { ascending: false }).limit(1000)
-  const orders = (data ?? []) as Row[]
+  const orders = await db()<Row[]>`
+    select o.*, p.business_name, l.name as location_name,
+      exists (select 1 from sensare_partner_payments x
+              where x.order_id = o.id and x.status = 'pending' and x.settlement_id is null and x.method <> 'hitpay') as pending_transfer
+    from sensare_partner_orders o
+    join sensare_partners p on p.id = o.partner_id
+    join sensare_partner_locations l on l.id = o.location_id
+    order by o.created_at desc limit 1000`
 
   const match = (o: Row) => {
     switch (f) {
@@ -31,7 +35,7 @@ export default async function AdminPartnerOrdersPage({ searchParams }: { searchP
   }
   const shown = orders.filter(match)
   const active = orders.filter(o => o.status !== 'cancelled')
-  const toVerify = orders.filter(o => o.sensare_partner_payments.some(p => p.status === 'pending' && !p.settlement_id && o.status !== 'cancelled'))
+  const toVerify = orders.filter(o => o.pending_transfer && o.status !== 'cancelled')
 
   return (
     <div className="pp-stack">
@@ -60,7 +64,7 @@ export default async function AdminPartnerOrdersPage({ searchParams }: { searchP
                 {shown.map(o => (
                   <tr key={o.id}>
                     <td><Link className="pp-link" href={`/admin/partner-orders/${o.id}`}>{o.order_number}</Link></td>
-                    <td>{o.sensare_partners?.business_name}<br /><span className="pp-muted" style={{ fontSize: 12 }}>{o.sensare_partner_locations?.name}</span></td>
+                    <td>{o.business_name}<br /><span className="pp-muted" style={{ fontSize: 12 }}>{o.location_name}</span></td>
                     <td>{fmtDate(o.created_at)}</td>
                     <td><OrderStatusBadge status={o.status} /></td>
                     <td>{PAYMENT_TERMS[o.payment_terms]}</td>

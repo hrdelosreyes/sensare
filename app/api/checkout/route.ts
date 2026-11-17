@@ -1,13 +1,14 @@
-﻿import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase'
+import { NextRequest, NextResponse } from 'next/server'
+import { db, one } from '@/lib/db'
 
 export async function POST(req: NextRequest) {
   try {
     const { productId, qty = 1 } = await req.json()
     if (!productId || qty < 1) return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
 
-    const { data: product } = await supabaseAdmin()
-      .from('sensare_products').select('*').eq('id', productId).eq('is_active', true).single()
+    if (typeof productId !== 'string' || !/^[0-9a-f-]{36}$/i.test(productId)) return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
+    const product = await one(db()<{ name: string; price_php: number; stock_qty: number }[]>`
+      select * from sensare_products where id = ${productId} and is_active`)
 
     if (!product) return NextResponse.json({ error: 'Product not found' }, { status: 404 })
     if (product.stock_qty < qty) return NextResponse.json({ error: 'Not enough stock' }, { status: 409 })
@@ -48,7 +49,7 @@ export async function POST(req: NextRequest) {
     const hitpay = await hitpayRes.json()
 
     // Create pending order
-    await supabaseAdmin().from('sensare_orders').insert({
+    await db()`insert into sensare_orders ${db()({
       reference_number: refNum,
       customer_name: 'Pending',
       customer_email: 'pending@sensare.com',
@@ -59,7 +60,7 @@ export async function POST(req: NextRequest) {
       total_php: grandTotal,
       payment_status: 'pending',
       hitpay_payment_id: hitpay.id,
-    })
+    })}`
 
     return NextResponse.json({ url: hitpay.url })
   } catch (err) {

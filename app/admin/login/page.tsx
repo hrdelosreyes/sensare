@@ -1,28 +1,10 @@
-'use client'
-import { useActionState } from 'react'
-import Image from 'next/image'
-import { adminLoginAction } from '../actions'
-import { FormMessage, SubmitButton } from '@/components/portal/forms'
+import { redirect } from 'next/navigation'
+import { getAdmin, hasAnyAdmin } from '@/lib/auth'
+import AdminLoginForm from './LoginForm'
 
-export default function AdminLoginPage() {
-  const [state, action] = useActionState(adminLoginAction, undefined)
+export const dynamic = 'force-dynamic'
 
-  return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--espresso)', padding: '96px 24px 24px' }}>
-      <div style={{ width: '100%', maxWidth: 380, textAlign: 'center' }}>
-        <Image src="/logo-sensare.png" alt="Sensarè" width={64} height={64} style={{ objectFit: 'contain', margin: '0 auto 16px', display: 'block' }} />
-        <p style={{ fontFamily: 'OleoScript', fontSize: 24, color: 'var(--rose-gold)', marginBottom: 4 }}>Sensarè</p>
-        <p style={{ fontFamily: 'PlayfairDisplay', fontSize: 13, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 28 }}>Admin</p>
-
-        <form action={action} style={{ textAlign: 'left' }}>
-          <FormMessage state={state} />
-          <label className="pp-field"><span className="pp-label">Email</span>
-            <input className="pp-input" type="email" name="email" required autoComplete="username" /></label>
-          <label className="pp-field"><span className="pp-label">Password</span>
-            <input className="pp-input" type="password" name="password" required autoComplete="current-password" /></label>
-          <SubmitButton pendingText="…" className="pp-btn pp-btn-block">Enter</SubmitButton>
-        </form>
-      </div>
-    </div>
-  )
+export default async function AdminLoginPage() {
+  if (await getAdmin()) redirect('/admin')
+  return <AdminLoginForm needsSetup={!(await hasAnyAdmin())} />
 }

@@ -1,5 +1,5 @@
 import { requireApprovedPartnerPage } from '@/lib/auth'
-import { supabaseAdmin } from '@/lib/supabase'
+import { db } from '@/lib/db'
 import { getLocations } from '@/lib/partner-data'
 import { getStockPlan, getForecastSettings } from '@/lib/forecast'
 import { ADJUSTMENT_REASONS, fmtDate, locationLabel } from '@/lib/partner'
@@ -9,11 +9,17 @@ import StockTable from '@/components/portal/StockTable'
 export default async function InventoryPage() {
   const partner = await requireApprovedPartnerPage()
   const [locations, cfg] = await Promise.all([getLocations(partner.id, false), getForecastSettings()])
-  const [plan, { data: moves }] = await Promise.all([
+  const [plan, moves] = await Promise.all([
     getStockPlan(partner.id, cfg, locations),
-    supabaseAdmin().from('sensare_partner_inventory_movements')
-      .select('*, sensare_products(name), sensare_partner_orders(order_number), sensare_partner_locations(name)')
-      .eq('partner_id', partner.id).order('created_at', { ascending: false }).limit(80),
+    db()<{ id: string; movement_date: string; movement_type: string; reason: string; notes: string | null; qty_change: number
+      product_name: string; order_number: string | null; location_name: string }[]>`
+      select m.*, p.name as product_name, o.order_number, l.name as location_name
+      from sensare_partner_inventory_movements m
+      join sensare_products p on p.id = m.product_id
+      join sensare_partner_locations l on l.id = m.location_id
+      left join sensare_partner_orders o on o.id = m.order_id
+      where m.partner_id = ${partner.id}
+      order by m.created_at desc limit 80`,
   ])
   const multi = locations.filter(l => l.is_active).length > 1
   const totalOnHand = plan.reduce((s, r) => s + r.on_hand, 0)
@@ -45,7 +51,7 @@ export default async function InventoryPage() {
         </div>
         <div className="pp-card">
           <p className="pp-h2">Stock history</p>
-          {!moves?.length ? <p className="pp-empty">No movements yet.</p> : (
+          {!moves.length ? <p className="pp-empty">No movements yet.</p> : (
             <div className="pp-table-wrap" style={{ maxHeight: 420, overflowY: 'auto' }}>
               <table className="pp-table">
                 <thead><tr><th>Date</th><th>Product</th><th>Type</th><th className="pp-num">Units</th></tr></thead>
@@ -53,9 +59,9 @@ export default async function InventoryPage() {
                   {moves.map(m => (
                     <tr key={m.id}>
                       <td>{fmtDate(m.movement_date)}</td>
-                      <td>{m.sensare_products?.name}{multi && <><br /><span className="pp-muted" style={{ fontSize: 12 }}>{m.sensare_partner_locations?.name}</span></>}</td>
+                      <td>{m.product_name}{multi && <><br /><span className="pp-muted" style={{ fontSize: 12 }}>{m.location_name}</span></>}</td>
                       <td>
-                        {m.movement_type === 'delivery' ? `Delivery ${m.sensare_partner_orders?.order_number ?? ''}` : m.movement_type === 'sale' ? 'Sale' : ADJUSTMENT_REASONS[m.reason] ?? 'Adjustment'}
+                        {m.movement_type === 'delivery' ? `Delivery ${m.order_number ?? ''}` : m.movement_type === 'sale' ? 'Sale' : ADJUSTMENT_REASONS[m.reason] ?? 'Adjustment'}
                         {m.notes && m.movement_type === 'adjustment' && <><br /><span className="pp-muted" style={{ fontSize: 12 }}>{m.notes}</span></>}
                       </td>
                       <td className="pp-num" style={{ color: m.qty_change > 0 ? '#98d898' : 'var(--cream-dim)' }}>{m.qty_change > 0 ? '+' : ''}{m.qty_change}</td>

@@ -21,7 +21,7 @@ export default async function AccountPage() {
           </dl>
           <p className="pp-hint" style={{ marginTop: 14 }}>To change your business name, TIN or payment terms, email hello@mysensare.com.</p>
           <p className="pp-h2" style={{ marginTop: 28 }}>Change password</p>
-          <ResetForm continueHref="/partners/portal/account" />
+          <ResetForm mode="change" />
         </div>
         <div className="pp-card">
           <p className="pp-h2">Contact & delivery details</p>

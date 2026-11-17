@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { requireAdminPage } from '@/lib/auth'
-import { supabaseAdmin } from '@/lib/supabase'
+import { db } from '@/lib/db'
 import { getLocations } from '@/lib/partner-data'
 import { getConsignmentState, previewSettlement } from '@/lib/consignment'
 import { balance, fmtDate, isIsoDate, locationLabel, manilaToday, peso, PAYMENT_METHOD, type Partner, type PartnerOrder, type Settlement } from '@/lib/partner'
@@ -12,20 +12,24 @@ import RecordSettlementForm from './RecordSettlementForm'
 export default async function AdminConsignmentPage({ searchParams }: { searchParams: Promise<{ partner?: string; to?: string }> }) {
   await requireAdminPage()
   const sp = await searchParams
-  const db = supabaseAdmin()
+  const sql = db()
   const today = manilaToday()
-  const [{ data: settlementsData }, { data: consOrders }] = await Promise.all([
-    db.from('sensare_partner_consignment_settlements').select('*, sensare_partners(business_name)')
-      .neq('status', 'failed').order('created_at', { ascending: false }).limit(100),
-    db.from('sensare_partner_orders').select('*, sensare_partners(*)').eq('payment_terms', 'consignment').eq('status', 'delivered'),
+  const [settlements, consOrders, consPartners] = await Promise.all([
+    sql<(Settlement & { business_name: string })[]>`
+      select s.*, p.business_name from sensare_partner_consignment_settlements s
+      join sensare_partners p on p.id = s.partner_id
+      where s.status <> 'failed' order by s.created_at desc limit 100`,
+    sql<PartnerOrder[]>`select * from sensare_partner_orders where payment_terms = 'consignment' and status = 'delivered'`,
+    sql<Partner[]>`select * from sensare_partners where id in (
+      select partner_id from sensare_partner_orders where payment_terms = 'consignment' and status = 'delivered')`,
   ])
-  const settlements = (settlementsData ?? []) as (Settlement & { sensare_partners: { business_name: string } | null })[]
+  const partnerById = new Map(consPartners.map(p => [p.id, p]))
   const pending = settlements.filter(s => s.status === 'pending' && s.method !== 'hitpay')
 
   // Partners with delivered consignment stock, and where their settlement stands.
   const byPartner = new Map<string, { partner: Partner; outstanding: number }>()
-  for (const o of (consOrders ?? []) as (PartnerOrder & { sensare_partners: Partner })[]) {
-    const v = byPartner.get(o.partner_id) ?? { partner: o.sensare_partners, outstanding: 0 }
+  for (const o of consOrders) {
+    const v = byPartner.get(o.partner_id) ?? { partner: partnerById.get(o.partner_id)!, outstanding: 0 }
     v.outstanding += balance(o)
     byPartner.set(o.partner_id, v)
   }
@@ -63,7 +67,7 @@ export default async function AdminConsignmentPage({ searchParams }: { searchPar
               <tbody>
                 {pending.map(s => (
                   <tr key={s.id}>
-                    <td>{s.sensare_partners?.business_name}</td><td>{periodLabel(s.period_from, s.period_to)}</td><td>{s.reference}</td><td>{fmtDate(s.paid_on)}</td>
+                    <td>{s.business_name}</td><td>{periodLabel(s.period_from, s.period_to)}</td><td>{s.reference}</td><td>{fmtDate(s.paid_on)}</td>
                     <td className="pp-num">{peso(s.amount_php)}</td>
                     <td>
                       <div className="pp-row" style={{ gap: 6 }}>
@@ -133,7 +137,7 @@ export default async function AdminConsignmentPage({ searchParams }: { searchPar
               <tbody>
                 {settlements.map(s => (
                   <tr key={s.id}>
-                    <td>{s.sensare_partners?.business_name}</td><td>{periodLabel(s.period_from, s.period_to)}</td><td>{PAYMENT_METHOD[s.method]}</td><td>{s.reference || '—'}</td>
+                    <td>{s.business_name}</td><td>{periodLabel(s.period_from, s.period_to)}</td><td>{PAYMENT_METHOD[s.method]}</td><td>{s.reference || '—'}</td>
                     <td><span className={`pp-badge ${s.status === 'confirmed' ? 'pp-badge-ok' : s.status === 'pending' ? 'pp-badge-warn' : 'pp-badge-bad'}`}>{s.status}</span></td>
                     <td className="pp-num">{s.units}</td><td className="pp-num">{peso(s.amount_php)}</td>
                   </tr>

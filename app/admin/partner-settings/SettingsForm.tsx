@@ -1,14 +1,14 @@
 'use client'
 import { useActionState } from 'react'
 import { saveSettingsAction } from '../actions'
-import { FormMessage, SubmitButton } from '@/components/portal/forms'
+import { ActionForm, FormMessage, SubmitButton } from '@/components/portal/forms'
 import { peso, type Product } from '@/lib/partner'
 import type { ForecastSettings } from '@/lib/forecast-math'
 
 export default function SettingsForm({ bank, forecast, products }: { bank: string; forecast: ForecastSettings; products: Product[] }) {
   const [state, action] = useActionState(saveSettingsAction, undefined)
   return (
-    <form action={action} className="pp-stack">
+    <ActionForm action={action} className="pp-stack">
       <FormMessage state={state} />
       <div className="pp-card">
         <p className="pp-h2">Wholesale products</p>
@@ -50,6 +50,6 @@ export default function SettingsForm({ bank, forecast, products }: { bank: strin
         </div>
       </div>
       <div><SubmitButton>Save settings</SubmitButton></div>
-    </form>
+    </ActionForm>
   )
 }

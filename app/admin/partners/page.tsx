@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { requireAdminPage } from '@/lib/auth'
-import { supabaseAdmin } from '@/lib/supabase'
+import { db } from '@/lib/db'
 import { BUSINESS_TYPES, fmtDate, PAYMENT_TERMS, type Partner, type PartnerStatus } from '@/lib/partner'
 import { PartnerStatusBadge } from '@/components/portal/ui'
 
@@ -12,9 +12,7 @@ const FILTERS: { key: PartnerStatus | 'all'; label: string }[] = [
 export default async function AdminPartnersPage({ searchParams }: { searchParams: Promise<{ status?: string; q?: string }> }) {
   await requireAdminPage()
   const sp = await searchParams
-  const db = supabaseAdmin()
-  const { data: all } = await db.from('sensare_partners').select('*').order('created_at', { ascending: false }).limit(2000)
-  const partners = (all ?? []) as Partner[]
+  const partners = await db()<Partner[]>`select * from sensare_partners order by created_at desc limit 2000`
   const counts = partners.reduce<Record<string, number>>((c, p) => ({ ...c, [p.status]: (c[p.status] ?? 0) + 1 }), {})
   const status = (sp.status as PartnerStatus | 'all') ?? (counts.pending ? 'pending' : 'approved')
   const q = (sp.q ?? '').toLowerCase().trim()

@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { requireAdminPage } from '@/lib/auth'
-import { supabaseAdmin } from '@/lib/supabase'
+import { db, one } from '@/lib/db'
 import { balance, fmtDate, isOverdue, manilaToday, peso, PAYMENT_METHOD, PAYMENT_TERMS, type OrderItem, type Partner, type PartnerOrder, type Payment } from '@/lib/partner'
 import { OrderStatusBadge, PaymentStatusBadge } from '@/components/portal/ui'
 import { ConfirmButton } from '@/components/portal/forms'
@@ -12,21 +12,22 @@ import { TransitionPanel, EditOrderForm, RecordPaymentForm } from './forms'
 export default async function AdminOrderPage({ params }: { params: Promise<{ id: string }> }) {
   await requireAdminPage()
   const { id } = await params
-  const db = supabaseAdmin()
-  const { data } = await db.from('sensare_partner_orders').select('*, sensare_partners(*)').eq('id', id).maybeSingle()
+  const sql = db()
+  const data = /^[0-9a-f-]{36}$/i.test(id) ? await one(sql<PartnerOrder[]>`select * from sensare_partner_orders where id = ${id}`) : null
   if (!data) notFound()
-  const order = data as PartnerOrder & { sensare_partners: Partner }
-  const partner = order.sensare_partners
-  const [{ data: items }, { data: payments }, { data: products }, { data: location }, { data: siblings }] = await Promise.all([
-    db.from('sensare_partner_order_items').select('*').eq('order_id', id),
-    db.from('sensare_partner_payments').select('*').eq('order_id', id).order('created_at', { ascending: false }),
-    db.from('sensare_products').select('id, stock_qty'),
-    db.from('sensare_partner_locations').select('*').eq('id', order.location_id).maybeSingle(),
-    db.from('sensare_partner_orders').select('id, order_number, status, sensare_partner_locations(name)').eq('order_group_id', order.order_group_id).neq('id', order.id),
+  const order = data
+  const [partner, its, pays, products, location, siblings] = await Promise.all([
+    one(sql<Partner[]>`select * from sensare_partners where id = ${order.partner_id}`).then(p => p!),
+    sql<OrderItem[]>`select * from sensare_partner_order_items where order_id = ${id}`,
+    sql<Payment[]>`select * from sensare_partner_payments where order_id = ${id} order by created_at desc`,
+    sql<{ id: string; stock_qty: number }[]>`select id, stock_qty from sensare_products`,
+    one(sql<{ name: string }[]>`select name from sensare_partner_locations where id = ${order.location_id}`),
+    sql<{ id: string; order_number: string; location_name: string }[]>`
+      select o.id, o.order_number, l.name as location_name from sensare_partner_orders o
+      join sensare_partner_locations l on l.id = o.location_id
+      where o.order_group_id = ${order.order_group_id} and o.id <> ${order.id}`,
   ])
-  const stockBy = new Map((products ?? []).map(p => [p.id as string, Number(p.stock_qty)]))
-  const its = (items ?? []) as OrderItem[]
-  const pays = (payments ?? []) as Payment[]
+  const stockBy = new Map(products.map(p => [p.id, p.stock_qty]))
   const due = balance(order)
 
   return (
@@ -74,10 +75,9 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ id:
           <dl className="pp-dl" style={{ marginTop: 20 }}>
             <dt>Branch</dt><dd>{location?.name ?? '—'}</dd>
             <dt>Deliver to</dt><dd style={{ whiteSpace: 'pre-line' }}>{order.shipping_address || '—'}</dd>
-            {(siblings?.length ?? 0) > 0 && <><dt>Same request</dt><dd>{siblings!.map((x, i) => {
-              const ln = x.sensare_partner_locations as unknown as { name: string } | null
-              return <span key={x.id}>{i > 0 && ', '}<Link className="pp-link" href={`/admin/partner-orders/${x.id}`}>{x.order_number}</Link>{ln ? ` (${ln.name})` : ''}</span>
-            })}</dd></>}
+            {siblings.length > 0 && <><dt>Same request</dt><dd>{siblings.map((x, i) => (
+              <span key={x.id}>{i > 0 && ', '}<Link className="pp-link" href={`/admin/partner-orders/${x.id}`}>{x.order_number}</Link> ({x.location_name})</span>
+            ))}</dd></>}
             {order.suggestion_id && <><dt>Source</dt><dd>Approved from an automatic suggestion</dd></>}
             <dt>Partner notes</dt><dd>{order.partner_notes || '—'}</dd>
             <dt>Terms</dt><dd>{PAYMENT_TERMS[order.payment_terms]}{order.payment_terms !== partner.default_payment_terms && <span className="pp-badge pp-badge-warn" style={{ marginLeft: 8 }}>Differs from default ({PAYMENT_TERMS[partner.default_payment_terms]})</span>}</dd>

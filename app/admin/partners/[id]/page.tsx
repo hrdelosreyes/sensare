@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { requireAdminPage } from '@/lib/auth'
-import { supabaseAdmin } from '@/lib/supabase'
+import { db, one } from '@/lib/db'
 import { getLocations, getPartnerCatalog } from '@/lib/partner-data'
 import { getStockPlan } from '@/lib/forecast'
 import StockTable from '@/components/portal/StockTable'
@@ -13,22 +13,24 @@ import { StatusForm, PartnerAdminForm, PriceListForm, AdminAdjustForm } from './
 export default async function AdminPartnerPage({ params }: { params: Promise<{ id: string }> }) {
   await requireAdminPage()
   const { id } = await params
-  const db = supabaseAdmin()
-  const { data } = await db.from('sensare_partners').select('*').eq('id', id).maybeSingle()
-  if (!data) notFound()
-  const partner = data as Partner
+  const sql = db()
+  const partner = /^[0-9a-f-]{36}$/i.test(id) ? await one(sql<Partner[]>`select * from sensare_partners where id = ${id}`) : null
+  if (!partner) notFound()
 
   const locations = await getLocations(partner.id, false)
-  const [catalog, stock, { data: ordersData }, { data: suggestion }] = await Promise.all([
+  const [catalog, stock, orders, suggestion, sugLines] = await Promise.all([
     getPartnerCatalog(partner.id, true),
     getStockPlan(partner.id, undefined, locations),
-    db.from('sensare_partner_orders').select('*').eq('partner_id', partner.id).order('created_at', { ascending: false }).limit(200),
-    db.from('sensare_partner_order_suggestions').select('id, generated_at, notified_at, sensare_partner_order_suggestion_lines(suggested_cases, location_id)')
-      .eq('partner_id', partner.id).eq('status', 'open').maybeSingle(),
+    sql<PartnerOrder[]>`select * from sensare_partner_orders where partner_id = ${partner.id} order by created_at desc limit 200`,
+    one(sql<{ generated_at: string; notified_at: string | null }[]>`
+      select generated_at, notified_at from sensare_partner_order_suggestions where partner_id = ${partner.id} and status = 'open'`),
+    sql<{ suggested_cases: number; location_id: string }[]>`
+      select l.suggested_cases, l.location_id from sensare_partner_order_suggestion_lines l
+      join sensare_partner_order_suggestions s on s.id = l.suggestion_id
+      where s.partner_id = ${partner.id} and s.status = 'open'`,
   ])
   const locName = new Map(locations.map(l => [l.id, locationLabel(l)]))
-  const sugCases = (suggestion?.sensare_partner_order_suggestion_lines ?? []).reduce((t, l) => t + l.suggested_cases, 0)
-  const orders = (ordersData ?? []) as PartnerOrder[]
+  const sugCases = sugLines.reduce((t, l) => t + l.suggested_cases, 0)
   const active = orders.filter(o => o.status !== 'cancelled')
   const outstanding = active.reduce((s, o) => s + balance(o), 0)
   const overdue = active.filter(isOverdue).reduce((s, o) => s + balance(o), 0)
@@ -114,7 +116,7 @@ export default async function AdminPartnerPage({ params }: { params: Promise<{ i
           </table>
           <p className="pp-h3" style={{ marginTop: 20 }}>Suggested order</p>
           {suggestion && sugCases > 0
-            ? <p className="pp-text" style={{ marginBottom: 10 }}>Open: <strong>{sugCases} cases</strong> across {new Set(suggestion.sensare_partner_order_suggestion_lines.map(l => l.location_id)).size} branch(es), updated {fmtDate(suggestion.generated_at)}{suggestion.notified_at ? ' · partner emailed' : ''}. Waiting for the partner to approve.</p>
+            ? <p className="pp-text" style={{ marginBottom: 10 }}>Open: <strong>{sugCases} cases</strong> across {new Set(sugLines.map(l => l.location_id)).size} branch(es), updated {fmtDate(suggestion.generated_at)}{suggestion.notified_at ? ' · partner emailed' : ''}. Waiting for the partner to approve.</p>
             : <p className="pp-muted" style={{ marginBottom: 10 }}>No reorder needed right now.</p>}
           <form action={generateSuggestionAction} className="pp-row">
             <input type="hidden" name="partner_id" value={partner.id} />

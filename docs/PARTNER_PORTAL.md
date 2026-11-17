@@ -4,39 +4,65 @@ Partners apply at **/partners**, an admin approves them, and approved partners u
 **/partners/portal** to order (in cases of 12), track inventory, record daily sales
 and run reports. Admins manage everything under **/admin**.
 
-## One-time setup
+## Hosting: Vercel + Neon
 
-1. **Run the SQL** in Supabase → SQL Editor, in this order:
-   `supabase/partner_portal.sql`, then `supabase/partner_portal_v2.sql`.
-   Both are safe to re-run (if you re-run the first, re-run the second after it).
-   The first also revokes public access to the existing `sensare_decrement_stock`
-   function (the public anon key could call it before). The second adds branches,
-   order suggestions and consignment settlements, and moves any existing partner
-   data onto each partner's "Main" branch.
-2. **Create the first admin.** The old `ADMIN_PASSWORD` login is gone — admins now
-   sign in with email + password.
-   - Supabase → Authentication → Users → *Add user* (tick *Auto Confirm User*).
-   - Then in the SQL Editor:
-     ```sql
-     insert into sensare_admins (user_id, email, name)
-     select id, email, 'Owner' from auth.users where email = 'you@example.com';
-     ```
-   - Add more admins afterwards from **/admin/team**.
-3. **Supabase Auth settings** (Authentication → URL Configuration): add
-   `https://mysensare.com/partners/auth/callback` to *Redirect URLs* so
-   password-reset emails work.
-4. **Set partner defaults** at **/admin/partner-settings**: default case price per
-   product (used when a partner has no custom price), bank-transfer details shown to
-   partners, and the reorder settings (lead time 14 / cover 14 / safety 7 days).
-5. **Daily job.** `vercel.json` schedules `/api/cron/partners` every day at 06:00
-   Manila time. Set a `CRON_SECRET` environment variable in Vercel (any long
-   random string) — Vercel sends it automatically, and the endpoint refuses calls
-   without it. Not on Vercel? Call the URL daily with
-   `Authorization: Bearer <CRON_SECRET>`.
-6. Other environment variables are unchanged (`NEXT_PUBLIC_SUPABASE_URL`,
-   `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `RESEND_API_KEY`,
-   `HITPAY_API_KEY`, `HITPAY_SALT`, `NEXT_PUBLIC_HITPAY_MODE`, `NEXT_PUBLIC_APP_URL`).
-   `ADMIN_PASSWORD` is no longer used and can be removed.
+Everything runs on Vercel: the site, the daily job, and a Neon Postgres database
+connected through Vercel's Storage tab. There is no Supabase dependency.
+
+- **Database tables are created automatically.** Every deploy runs
+  `scripts/migrate.mjs` before `next build`. It applies any new files in
+  `db/migrations/` (once each) and, on an empty database, loads the starter
+  catalogue from `db/seed.sql`.
+- **Accounts** (partners and admins) are stored in the same database: scrypt-hashed
+  passwords, httpOnly session cookies, password-reset links emailed through Resend,
+  and sign-in throttling.
+
+## Moving from Supabase to Neon (one time)
+
+1. **Connect Neon.** In the Vercel project → **Storage** → create or connect a Neon
+   database for Production (and Preview if you like). It adds `DATABASE_URL`
+   (plus `DATABASE_URL_UNPOOLED`) automatically.
+2. **Keep the old Supabase variables for now.** While `NEXT_PUBLIC_SUPABASE_URL`
+   and `SUPABASE_SERVICE_ROLE_KEY` are still set, each deploy copies the shop's
+   data from Supabase into Neon: products (with their ids), product images,
+   testimonials, newsletter subscribers, restock requests and orders. It only
+   adds rows that aren't there yet, so it's safe on every deploy.
+3. **Add** `CRON_SECRET` (any long random string) for the daily job.
+4. **Deploy** (merge the PR). Check the build log for `[migrate] … database ready`
+   and the row counts it imported.
+5. **Create the first admin** at **/admin/setup**. Enter the site's current
+   `ADMIN_PASSWORD` as the setup code, then choose your own email and password.
+   The page closes for good once an admin exists. Add more admins under **Team**.
+6. **Check the shop and admin.** Then, once you're happy (and after one last
+   redeploy if orders came in during the switch), **remove** these variables in
+   Vercel: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`,
+   `SUPABASE_SERVICE_ROLE_KEY`, and `ADMIN_PASSWORD`. Redeploy.
+
+   ⚠️ While the Supabase variables remain, each deploy refreshes product details
+   and stock from Supabase — so remove them before editing products in the new admin.
+
+7. **Partner settings** at **/admin/partner-settings**: default case prices, bank
+   details for transfers, and reorder settings (lead time 14 / cover 14 / safety 7 days).
+
+> The Supabase project also hosts BukidBox — only cancel it once BukidBox has moved too.
+
+### Environment variables
+
+| Variable | Purpose |
+|---|---|
+| `DATABASE_URL` | Neon (set by the Vercel integration) |
+| `CRON_SECRET` | Protects `/api/cron/partners` (Vercel sends it automatically) |
+| `RESEND_API_KEY` | Emails (order updates, password resets) |
+| `HITPAY_API_KEY`, `HITPAY_SALT`, `NEXT_PUBLIC_HITPAY_MODE` | Online payments |
+| `NEXT_PUBLIC_APP_URL` | Site URL used in emails and payment redirects |
+| `ADMIN_PASSWORD` or `ADMIN_SETUP_CODE` | Only until the first admin is created |
+
+### Running locally
+
+```bash
+DATABASE_URL=postgres://… npm run db:migrate   # create/upgrade tables
+DATABASE_URL=postgres://… npm run dev
+```
 
 ## How it works
 
@@ -100,7 +126,11 @@ cash/check settlements at **/admin/consignment** and verify bank transfers there
 ## Security model
 
 - All data access is server-side with explicit checks (`lib/auth.ts`); every server
-  action re-verifies the user.
-- RLS is on for every new table; the anon key can't read or write any of it, and the
-  database functions can only be called with the service role.
+  action re-verifies the user. The database is reachable only with `DATABASE_URL`,
+  which never leaves the server.
+- Passwords: scrypt with per-user salt. Sessions: random 256-bit tokens, stored
+  hashed, httpOnly + Secure + SameSite=Lax cookies, 30-day expiry; changing or
+  resetting a password signs out other devices.
+- 8 failed sign-ins for an email within 15 minutes pauses sign-in; reset links are
+  single-use and expire after 1 hour (max 3 per hour).
 - Partners only ever see their own rows.

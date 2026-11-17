@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { requireApprovedPartnerPage } from '@/lib/auth'
-import { supabaseAdmin } from '@/lib/supabase'
+import { db, one } from '@/lib/db'
 import { getLocations, getPartnerCatalog } from '@/lib/partner-data'
 import { getForecastSettings } from '@/lib/forecast'
 import { addDays, fmtDate, locationLabel, manilaToday, peso } from '@/lib/partner'
@@ -15,19 +15,20 @@ type Line = {
 
 export default async function SuggestedOrderPage() {
   const partner = await requireApprovedPartnerPage()
-  const db = supabaseAdmin()
-  const [{ data: s }, locations, catalog, cfg, { data: history }] = await Promise.all([
-    db.from('sensare_partner_order_suggestions').select('*, sensare_partner_order_suggestion_lines(*)')
-      .eq('partner_id', partner.id).eq('status', 'open').maybeSingle(),
+  const sql = db()
+  const [s, locations, catalog, cfg, history] = await Promise.all([
+    one(sql<{ id: string; generated_at: string }[]>`select * from sensare_partner_order_suggestions where partner_id = ${partner.id} and status = 'open'`),
     getLocations(partner.id, false),
     getPartnerCatalog(partner.id),
     getForecastSettings(),
-    db.from('sensare_partner_order_suggestions').select('id, status, generated_at, decided_at, order_group_id')
-      .eq('partner_id', partner.id).neq('status', 'open').neq('status', 'superseded').order('generated_at', { ascending: false }).limit(5),
+    sql<{ id: string; status: string; generated_at: string; order_group_id: string | null }[]>`
+      select id, status, generated_at, order_group_id from sensare_partner_order_suggestions
+      where partner_id = ${partner.id} and status in ('approved', 'dismissed') order by generated_at desc limit 5`,
   ])
+  const rawLines = s ? await sql<Line[]>`select * from sensare_partner_order_suggestion_lines where suggestion_id = ${s.id}` : []
   const locName = new Map(locations.map(l => [l.id, locationLabel(l)]))
   const price = new Map(catalog.map(c => [c.id, c]))
-  const lines = ((s?.sensare_partner_order_suggestion_lines ?? []) as Line[]).filter(l => price.has(l.product_id))
+  const lines = rawLines.filter(l => price.has(l.product_id))
   const byLoc = new Map<string, Line[]>()
   for (const l of lines) byLoc.set(l.location_id, [...(byLoc.get(l.location_id) ?? []), l])
   const total = lines.reduce((t, l) => t + l.suggested_cases * (price.get(l.product_id)?.effective_case_price ?? 0), 0)
@@ -104,12 +105,12 @@ export default async function SuggestedOrderPage() {
         </>
       )}
 
-      {(history?.length ?? 0) > 0 && (
+      {history.length > 0 && (
         <div className="pp-card">
           <p className="pp-h3">Past suggestions</p>
           <table className="pp-table">
             <tbody>
-              {history!.map(h => (
+              {history.map(h => (
                 <tr key={h.id}>
                   <td>{fmtDate(h.generated_at)}</td>
                   <td><span className={`pp-badge ${h.status === 'approved' ? 'pp-badge-ok' : 'pp-badge-mute'}`}>{h.status === 'dismissed' ? 'skipped' : h.status}</span></td>

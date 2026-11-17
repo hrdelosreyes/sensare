@@ -1,5 +1,5 @@
 import { requireApprovedPartnerPage } from '@/lib/auth'
-import { supabaseAdmin } from '@/lib/supabase'
+import { db } from '@/lib/db'
 import { getLocations, getPartnerCatalog } from '@/lib/partner-data'
 import { getStockPlan } from '@/lib/forecast'
 import { locationLabel } from '@/lib/partner'
@@ -15,12 +15,13 @@ export default async function NewOrderPage({ searchParams }: { searchParams: Pro
   let suggestionId: string | null = null
   const initial: Record<string, number> = {}
   if (sp.suggestion) {
-    const { data } = await supabaseAdmin().from('sensare_partner_order_suggestions')
-      .select('id, sensare_partner_order_suggestion_lines(location_id, product_id, suggested_cases)')
-      .eq('id', sp.suggestion).eq('partner_id', partner.id).eq('status', 'open').maybeSingle()
-    if (data) {
-      suggestionId = data.id
-      for (const l of data.sensare_partner_order_suggestion_lines) initial[`${l.location_id}_${l.product_id}`] = l.suggested_cases
+    const lines = /^[0-9a-f-]{36}$/i.test(sp.suggestion) ? await db()<{ location_id: string; product_id: string; suggested_cases: number }[]>`
+      select l.location_id, l.product_id, l.suggested_cases from sensare_partner_order_suggestion_lines l
+      join sensare_partner_order_suggestions s on s.id = l.suggestion_id
+      where s.id = ${sp.suggestion} and s.partner_id = ${partner.id} and s.status = 'open'` : []
+    if (lines.length) {
+      suggestionId = sp.suggestion
+      for (const l of lines) initial[`${l.location_id}_${l.product_id}`] = l.suggested_cases
     }
   }
   const stock = Object.fromEntries(plan.map(p => [`${p.location_id}_${p.product_id}`, { onHand: p.on_hand, onOrder: p.on_order, suggested: p.suggested_cases }]))

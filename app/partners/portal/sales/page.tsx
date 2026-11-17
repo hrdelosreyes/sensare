@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { requireApprovedPartnerPage } from '@/lib/auth'
-import { supabaseAdmin } from '@/lib/supabase'
+import { db } from '@/lib/db'
 import { getLocations } from '@/lib/partner-data'
 import { addDays, fmtDate, isIsoDate, locationLabel, manilaToday, peso } from '@/lib/partner'
 import SalesForm from './SalesForm'
@@ -12,21 +12,25 @@ export default async function SalesPage({ searchParams }: { searchParams: Promis
   const date = isIsoDate(sp.date) && sp.date <= today ? sp.date : today
   const locations = await getLocations(partner.id)
   const loc = locations.find(l => l.id === sp.loc) ?? locations[0]
-  const db = supabaseAdmin()
+  const sql = db()
 
-  const [{ data: stock }, { data: products }, { data: dayEntries }, { data: recent }, { data: settled }] = await Promise.all([
-    db.from('sensare_partner_stock').select('product_id, on_hand').eq('location_id', loc.id),
-    db.from('sensare_products').select('id, name, price_php').eq('is_active', true).order('sort_order'),
-    db.from('sensare_partner_sales').select('*').eq('location_id', loc.id).eq('sale_date', date),
-    db.from('sensare_partner_sales').select('sale_date, units_sold, unit_price_php').eq('location_id', loc.id)
-      .gte('sale_date', addDays(today, -13)).order('sale_date', { ascending: false }),
-    db.from('sensare_partner_consignment_settlements').select('period_from, period_to').eq('partner_id', partner.id)
-      .in('status', ['pending', 'confirmed']).lte('period_from', date).gte('period_to', date).limit(1),
+  const [stock, products, dayEntries, recent, settled] = await Promise.all([
+    sql<{ product_id: string; on_hand: number }[]>`select product_id, on_hand from sensare_partner_stock where location_id = ${loc.id}`,
+    sql<{ id: string; name: string; price_php: number }[]>`select id, name, price_php from sensare_products where is_active order by sort_order`,
+    sql<{ product_id: string; units_sold: number; unit_price_php: number | null }[]>`
+      select product_id, units_sold, unit_price_php from sensare_partner_sales where location_id = ${loc.id} and sale_date = ${date}::date`,
+    sql<{ sale_date: string; units_sold: number; unit_price_php: number | null }[]>`
+      select sale_date, units_sold, unit_price_php from sensare_partner_sales
+      where location_id = ${loc.id} and sale_date >= ${addDays(today, -13)}::date order by sale_date desc`,
+    sql<{ period_from: string; period_to: string }[]>`
+      select period_from, period_to from sensare_partner_consignment_settlements
+      where partner_id = ${partner.id} and status in ('pending', 'confirmed')
+        and period_from <= ${date}::date and period_to >= ${date}::date limit 1`,
   ])
 
-  const onHand = new Map((stock ?? []).map(s => [s.product_id as string, Number(s.on_hand)]))
-  const entries = new Map((dayEntries ?? []).map(e => [e.product_id as string, e]))
-  const rows = (products ?? [])
+  const onHand = new Map(stock.map(s => [s.product_id, s.on_hand]))
+  const entries = new Map(dayEntries.map(e => [e.product_id, e]))
+  const rows = products
     .filter(p => onHand.has(p.id) || entries.has(p.id))
     .map(p => {
       const e = entries.get(p.id)
@@ -39,7 +43,7 @@ export default async function SalesPage({ searchParams }: { searchParams: Promis
     })
 
   const byDay = new Map<string, { units: number; revenue: number }>()
-  for (const r of recent ?? []) {
+  for (const r of recent) {
     const d = byDay.get(r.sale_date) ?? { units: 0, revenue: 0 }
     d.units += Number(r.units_sold)
     d.revenue += Number(r.units_sold) * Number(r.unit_price_php ?? 0)

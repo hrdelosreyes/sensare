@@ -1,7 +1,7 @@
 'use client'
 import { useActionState, useState, useTransition } from 'react'
 import { payOnlineAction, reportBankTransferAction } from '../../actions'
-import { FormMessage, SubmitButton } from '@/components/portal/forms'
+import { ActionForm, FormMessage, SubmitButton } from '@/components/portal/forms'
 import { peso } from '@/lib/partner'
 
 export default function PayPanel({ orderId, balance, canPayOnline, bankDetails, today }: {
@@ -38,7 +38,7 @@ export default function PayPanel({ orderId, balance, canPayOnline, bankDetails, 
             : <p className="pp-alert pp-alert-info" style={{ marginBottom: 0 }}>Online payment opens once we confirm your order and final total.</p>}
         </div>
       ) : (
-        <form action={action}>
+        <ActionForm action={action}>
           <input type="hidden" name="order_id" value={orderId} />
           <div className="pp-alert pp-alert-info" style={{ whiteSpace: 'pre-line' }}>{bankDetails}</div>
           <FormMessage state={state} />
@@ -53,7 +53,7 @@ export default function PayPanel({ orderId, balance, canPayOnline, bankDetails, 
           <label className="pp-field"><span className="pp-label">Notes</span>
             <input className="pp-input" name="notes" maxLength={500} placeholder="Optional" /></label>
           <SubmitButton pendingText="Sending…">I&apos;ve sent the payment</SubmitButton>
-        </form>
+        </ActionForm>
       )}
     </div>
   )

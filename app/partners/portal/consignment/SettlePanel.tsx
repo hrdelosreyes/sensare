@@ -1,7 +1,7 @@
 'use client'
 import { useActionState, useState, useTransition } from 'react'
 import { payConsignmentOnlineAction, reportConsignmentTransferAction } from '../actions'
-import { FormMessage, SubmitButton } from '@/components/portal/forms'
+import { ActionForm, FormMessage, SubmitButton } from '@/components/portal/forms'
 import { peso } from '@/lib/partner'
 
 export default function SettlePanel({ to, amount, bankDetails, today }: { to: string; amount: number; bankDetails: string; today: string }) {
@@ -33,7 +33,7 @@ export default function SettlePanel({ to, amount, bankDetails, today }: { to: st
           <p className="pp-hint" style={{ marginTop: 8 }}>Card, GCash, Maya or online banking.</p>
         </div>
       ) : (
-        <form action={action} style={{ maxWidth: 520 }}>
+        <ActionForm action={action} style={{ maxWidth: 520 }}>
           <input type="hidden" name="period_to" value={to} />
           <div className="pp-alert pp-alert-info" style={{ whiteSpace: 'pre-line' }}>{bankDetails}</div>
           <FormMessage state={state} />
@@ -47,7 +47,7 @@ export default function SettlePanel({ to, amount, bankDetails, today }: { to: st
             <label className="pp-field"><span className="pp-label">Notes</span><input className="pp-input" name="notes" maxLength={500} /></label>
             <SubmitButton pendingText="Sending…">I&apos;ve sent {peso(amount, 0)}</SubmitButton>
           </>}
-        </form>
+        </ActionForm>
       )}
     </div>
   )

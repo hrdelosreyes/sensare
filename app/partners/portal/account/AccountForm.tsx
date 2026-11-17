@@ -1,13 +1,13 @@
 'use client'
 import { useActionState } from 'react'
 import { updateAccountAction } from '../actions'
-import { FormMessage, SubmitButton } from '@/components/portal/forms'
+import { ActionForm, FormMessage, SubmitButton } from '@/components/portal/forms'
 import type { Partner } from '@/lib/partner'
 
 export default function AccountForm({ partner }: { partner: Partner }) {
   const [state, action] = useActionState(updateAccountAction, undefined)
   return (
-    <form action={action}>
+    <ActionForm action={action}>
       <FormMessage state={state} />
       <label className="pp-field"><span className="pp-label">Contact person</span>
         <input className="pp-input" name="contact_name" defaultValue={partner.contact_name} required maxLength={200} /></label>
@@ -24,6 +24,6 @@ export default function AccountForm({ partner }: { partner: Partner }) {
       <label className="pp-field"><span className="pp-label">Where you sell</span>
         <input className="pp-input" name="sales_channels" defaultValue={partner.sales_channels ?? ''} maxLength={500} /></label>
       <SubmitButton>Save details</SubmitButton>
-    </form>
+    </ActionForm>
   )
 }

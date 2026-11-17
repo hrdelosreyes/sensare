@@ -1,14 +1,14 @@
 'use client'
 import { useActionState } from 'react'
 import { saveLocationAction, toggleLocationAction } from '../actions'
-import { FormMessage, SubmitButton } from '@/components/portal/forms'
+import { ActionForm, FormMessage, SubmitButton } from '@/components/portal/forms'
 import type { Location } from '@/lib/partner'
 
 export function LocationForm({ location }: { location?: Location }) {
   const [state, action] = useActionState(saveLocationAction, undefined)
   const l = location
   return (
-    <form action={action}>
+    <ActionForm action={action}>
       {l && <input type="hidden" name="location_id" value={l.id} />}
       <FormMessage state={state} />
       <div className="pp-grid-2" style={{ gap: '0 16px' }}>
@@ -30,20 +30,20 @@ export function LocationForm({ location }: { location?: Location }) {
           <input className="pp-input" name="delivery_notes" maxLength={500} defaultValue={l?.delivery_notes ?? ''} placeholder="Receiving hours, landmarks…" /></label>
       </div>
       <SubmitButton className="pp-btn pp-btn-sm">{l ? 'Save branch' : 'Add branch'}</SubmitButton>
-    </form>
+    </ActionForm>
   )
 }
 
 export function ToggleLocation({ id, active }: { id: string; active: boolean }) {
   const [state, action] = useActionState(toggleLocationAction, undefined)
   return (
-    <form action={action} style={{ marginTop: active ? 0 : 14 }}>
+    <ActionForm action={action} style={{ marginTop: active ? 0 : 14 }}>
       <input type="hidden" name="location_id" value={id} />
       <input type="hidden" name="active" value={active ? '1' : '0'} />
       <FormMessage state={state} />
       <SubmitButton className={active ? 'pp-btn pp-btn-ghost pp-btn-sm' : 'pp-btn pp-btn-danger pp-btn-sm'} pendingText="…">
         {active ? 'Reopen' : 'Close this branch'}
       </SubmitButton>
-    </form>
+    </ActionForm>
   )
 }

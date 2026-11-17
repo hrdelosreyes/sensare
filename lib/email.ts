@@ -1,6 +1,6 @@
 import 'server-only'
 import { Resend } from 'resend'
-import { supabaseAdmin } from './supabase'
+import { db } from './db'
 import { SITE_URL } from './seo'
 
 const FROM = 'Sensarè Partners <noreply@mysensare.com>'
@@ -32,8 +32,8 @@ async function send(to: string | string[], subject: string, html: string) {
 }
 
 async function adminEmails(): Promise<string[]> {
-  const { data } = await supabaseAdmin().from('sensare_admins').select('email')
-  return (data ?? []).map(a => a.email as string)
+  const rows = await db()<{ email: string }[]>`select email from sensare_admins`
+  return rows.map(a => a.email)
 }
 
 export const email = {
@@ -131,5 +131,12 @@ export const email = {
       layout('Late consignment payment',
         `<p>HitPay confirmed a consignment payment of <strong>₱${amount.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</strong> after its checkout had expired. It has been recorded — please check the partner hasn't paid the same period twice.</p><p style="font-size:12px;color:#a08070;">Settlement ${esc(settlementId)}</p>`,
         { label: 'Open consignment', href: `${SITE_URL}/admin/consignment` }))
+  },
+
+  async passwordReset(to: string, token: string) {
+    await send(to, 'Reset your Sensarè password',
+      layout('Reset your password',
+        `<p>We received a request to reset the password for your Sensarè account. This link works once and expires in 1 hour.</p><p>If you didn't ask for this, you can ignore this email — your password won't change.</p>`,
+        { label: 'Set a new password', href: `${SITE_URL}/partners/reset-password?token=${encodeURIComponent(token)}` }))
   },
 }

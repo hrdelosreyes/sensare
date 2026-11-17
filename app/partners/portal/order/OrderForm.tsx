@@ -2,7 +2,7 @@
 import Link from 'next/link'
 import { useActionState, useState } from 'react'
 import { placeOrderAction } from '../actions'
-import { FormMessage, SubmitButton } from '@/components/portal/forms'
+import { ActionForm, FormMessage, SubmitButton } from '@/components/portal/forms'
 import { PAYMENT_TERMS, PAYMENT_TERMS_HELP, peso, type PaymentTerms } from '@/lib/partner'
 
 type Item = { id: string; name: string; case_size: number; price: number; srp: number }
@@ -37,7 +37,7 @@ export default function OrderForm({ catalog, locations, defaultTerms, stock, ini
   }
 
   return (
-    <form action={action}>
+    <ActionForm action={action}>
       {suggestionId && <input type="hidden" name="suggestion_id" value={suggestionId} />}
       <FormMessage state={state} />
       <div className="pp-card">
@@ -130,6 +130,6 @@ export default function OrderForm({ catalog, locations, defaultTerms, stock, ini
           </SubmitButton>
         </div>
       </div>
-    </form>
+    </ActionForm>
   )
 }

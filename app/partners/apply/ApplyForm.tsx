@@ -1,14 +1,14 @@
 'use client'
 import { useActionState } from 'react'
 import { applyAction } from '../actions'
-import { FormMessage, SubmitButton } from '@/components/portal/forms'
+import { ActionForm, FormMessage, SubmitButton } from '@/components/portal/forms'
 import { BUSINESS_TYPES } from '@/lib/partner'
 
 export default function ApplyForm({ loggedInEmail }: { loggedInEmail: string | null }) {
   const [state, action] = useActionState(applyAction, undefined)
 
   return (
-    <form action={action} className="pp-card">
+    <ActionForm action={action} className="pp-card">
       <FormMessage state={state} />
 
       <p className="pp-h3">Your account</p>
@@ -66,6 +66,6 @@ export default function ApplyForm({ loggedInEmail }: { loggedInEmail: string | n
       </label>
 
       <SubmitButton pendingText="Submitting…" className="pp-btn pp-btn-block">Submit application</SubmitButton>
-    </form>
+    </ActionForm>
   )
 }

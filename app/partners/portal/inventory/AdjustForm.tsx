@@ -1,14 +1,14 @@
 'use client'
 import { useActionState } from 'react'
 import { adjustInventoryAction } from '../actions'
-import { FormMessage, SubmitButton } from '@/components/portal/forms'
+import { ActionForm, FormMessage, SubmitButton } from '@/components/portal/forms'
 import { ADJUSTMENT_REASONS } from '@/lib/partner'
 
 export default function AdjustForm({ options }: { options: { key: string; label: string }[] }) {
   const [state, action] = useActionState(adjustInventoryAction, undefined)
   if (!options.length) return <p className="pp-empty">No stock on hand to adjust.</p>
   return (
-    <form action={action}>
+    <ActionForm action={action}>
       <FormMessage state={state} />
       <label className="pp-field"><span className="pp-label">Product</span>
         <select className="pp-select" name="stock_key" required>
@@ -27,6 +27,6 @@ export default function AdjustForm({ options }: { options: { key: string; label:
           <input className="pp-input" name="notes" maxLength={500} /></label>
       </div>
       <SubmitButton>Save adjustment</SubmitButton>
-    </form>
+    </ActionForm>
   )
 }

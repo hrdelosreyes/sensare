@@ -1,15 +1,16 @@
 import Link from 'next/link'
 import { requireApprovedPartnerPage } from '@/lib/auth'
-import { supabaseAdmin } from '@/lib/supabase'
+import { db } from '@/lib/db'
 import { balance, fmtDate, isOverdue, locationLabel, peso, PAYMENT_TERMS, type PartnerOrder } from '@/lib/partner'
 import { OrderStatusBadge, PaymentStatusBadge } from '@/components/portal/ui'
 
 export default async function OrdersPage({ searchParams }: { searchParams: Promise<{ placed?: string }> }) {
   const partner = await requireApprovedPartnerPage()
   const { placed } = await searchParams
-  const { data } = await supabaseAdmin().from('sensare_partner_orders').select('*, sensare_partner_locations(name, city)')
-    .eq('partner_id', partner.id).order('created_at', { ascending: false })
-  const orders = (data ?? []) as (PartnerOrder & { sensare_partner_locations: { name: string; city: string | null } | null })[]
+  const orders = await db()<(PartnerOrder & { location_name: string; location_city: string | null })[]>`
+    select o.*, l.name as location_name, l.city as location_city
+    from sensare_partner_orders o join sensare_partner_locations l on l.id = o.location_id
+    where o.partner_id = ${partner.id} order by o.created_at desc`
   const groupSize = new Map<string, number>()
   for (const o of orders) groupSize.set(o.order_group_id, (groupSize.get(o.order_group_id) ?? 0) + 1)
   const placedCount = placed ? groupSize.get(placed) ?? 0 : 0
@@ -31,7 +32,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
                   <tr key={o.id} style={placed && o.order_group_id === placed ? { background: 'rgba(201,144,106,0.08)' } : undefined}>
                     <td><Link className="pp-link" href={`/partners/portal/orders/${o.id}`}>{o.order_number}</Link>
                       {(groupSize.get(o.order_group_id) ?? 1) > 1 && <><br /><span className="pp-muted" style={{ fontSize: 11 }}>split order</span></>}</td>
-                    <td>{o.sensare_partner_locations ? locationLabel(o.sensare_partner_locations) : '—'}</td>
+                    <td>{locationLabel({ name: o.location_name, city: o.location_city })}</td>
                     <td>{fmtDate(o.created_at)}</td>
                     <td><OrderStatusBadge status={o.status} /></td>
                     <td>{PAYMENT_TERMS[o.payment_terms]}</td>

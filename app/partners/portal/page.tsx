@@ -1,42 +1,41 @@
 import Link from 'next/link'
 import { requireApprovedPartnerPage } from '@/lib/auth'
-import { supabaseAdmin } from '@/lib/supabase'
+import { db } from '@/lib/db'
 import { getLocations } from '@/lib/partner-data'
 import { ensureFreshSuggestion, getStockPlan } from '@/lib/forecast'
 import { getConsignmentState } from '@/lib/consignment'
 import { addDays, balance, fmtDate, isOverdue, manilaToday, peso, PAYMENT_TERMS, type PartnerOrder } from '@/lib/partner'
 import { OrderStatusBadge, PaymentStatusBadge, Stat } from '@/components/portal/ui'
 
-export default async function PortalDashboard() {
+export default async function PortalDashboard({ searchParams }: { searchParams: Promise<{ reset?: string }> }) {
   const partner = await requireApprovedPartnerPage()
-  const db = supabaseAdmin()
+  const { reset } = await searchParams
+  const sql = db()
   const today = manilaToday()
 
   // Keep the suggestion current when the partner checks in (cheap, per partner).
   await ensureFreshSuggestion(partner)
-  const { data: suggestion } = await db.from('sensare_partner_order_suggestions')
-    .select('id, generated_at, sensare_partner_order_suggestion_lines(suggested_cases, location_id)')
-    .eq('partner_id', partner.id).eq('status', 'open').maybeSingle()
-
   const locations = await getLocations(partner.id)
-  const [{ data: ordersData }, plan, { data: sales7 }, { data: todaySales }, consignment] = await Promise.all([
-    db.from('sensare_partner_orders').select('*').eq('partner_id', partner.id).order('created_at', { ascending: false }),
+  const [sugLines, orders, plan, [{ units7 }], todaySales, consignment] = await Promise.all([
+    sql<{ suggested_cases: number; location_id: string }[]>`
+      select l.suggested_cases, l.location_id from sensare_partner_order_suggestion_lines l
+      join sensare_partner_order_suggestions s on s.id = l.suggestion_id
+      where s.partner_id = ${partner.id} and s.status = 'open'`,
+    sql<PartnerOrder[]>`select * from sensare_partner_orders where partner_id = ${partner.id} order by created_at desc`,
     getStockPlan(partner.id, undefined, locations),
-    db.from('sensare_partner_sales').select('units_sold').eq('partner_id', partner.id).gte('sale_date', addDays(today, -6)),
-    db.from('sensare_partner_sales').select('location_id').eq('partner_id', partner.id).eq('sale_date', today),
+    sql<{ units7: number }[]>`select coalesce(sum(units_sold), 0)::int as units7 from sensare_partner_sales
+      where partner_id = ${partner.id} and sale_date >= ${addDays(today, -6)}::date`,
+    sql<{ location_id: string }[]>`select distinct location_id from sensare_partner_sales where partner_id = ${partner.id} and sale_date = ${today}::date`,
     getConsignmentState(partner),
   ])
-  const orders = (ordersData ?? []) as PartnerOrder[]
   const active = orders.filter(o => o.status !== 'cancelled')
   const open = active.filter(o => o.status !== 'delivered')
   const outstanding = active.reduce((s, o) => s + balance(o), 0)
   const overdue = active.filter(isOverdue)
   const onHand = plan.reduce((s, r) => s + r.on_hand, 0)
-  const units7 = (sales7 ?? []).reduce((s, r) => s + Number(r.units_sold), 0)
   const stockedLocations = new Set(plan.filter(p => p.on_hand > 0).map(p => p.location_id))
-  const reportedToday = new Set((todaySales ?? []).map(s => s.location_id))
+  const reportedToday = new Set(todaySales.map(s => s.location_id))
   const missingToday = locations.filter(l => stockedLocations.has(l.id) && !reportedToday.has(l.id))
-  const sugLines = suggestion?.sensare_partner_order_suggestion_lines ?? []
   const sugCases = sugLines.reduce((s, l) => s + l.suggested_cases, 0)
   const sugBranches = new Set(sugLines.map(l => l.location_id)).size
   const lowLines = plan.filter(p => p.needs_reorder)
@@ -54,7 +53,8 @@ export default async function PortalDashboard() {
         </div>
       </div>
 
-      {suggestion && sugCases > 0 && (
+      {reset && <div className="pp-alert pp-alert-ok" style={{ marginBottom: 0 }}>Your password has been updated.</div>}
+      {sugCases > 0 && (
         <div className="pp-card" style={{ borderColor: 'rgba(201,144,106,0.55)' }}>
           <div className="pp-row" style={{ justifyContent: 'space-between' }}>
             <div>

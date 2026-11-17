@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { timingSafeEqual } from 'crypto'
-import { supabaseAdmin } from '@/lib/supabase'
+import { db } from '@/lib/db'
 import { refreshSuggestion } from '@/lib/forecast'
 import { getConsignmentState, previewSettlement } from '@/lib/consignment'
 import { email } from '@/lib/email'
@@ -22,9 +22,7 @@ function authorized(req: NextRequest) {
 export async function GET(req: NextRequest) {
   if (!authorized(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const db = supabaseAdmin()
-  const { data } = await db.from('sensare_partners').select('*').eq('status', 'approved')
-  const partners = (data ?? []) as Partner[]
+  const partners = await db()<Partner[]>`select * from sensare_partners where status = 'approved'`
   const result = { partners: partners.length, suggestions: 0, reminders: 0, errors: 0 }
 
   for (const p of partners) {
@@ -39,7 +37,7 @@ export async function GET(req: NextRequest) {
         const amount = lines.reduce((s, l) => s + l.amount_php, 0)
         if (amount > 0) {
           await email.consignmentReminder(p, st.nextFrom, st.defaultTo, amount)
-          await db.from('sensare_partners').update({ consignment_reminded_at: new Date().toISOString() }).eq('id', p.id)
+          await db()`update sensare_partners set consignment_reminded_at = now() where id = ${p.id}`
           result.reminders++
         }
       }

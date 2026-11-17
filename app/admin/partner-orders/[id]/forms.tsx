@@ -1,17 +1,18 @@
 'use client'
 import { useActionState } from 'react'
 import { orderTransitionAction, updateOrderAction, recordPaymentAction } from '../../actions'
-import { FormMessage, SubmitButton } from '@/components/portal/forms'
+import { ActionForm, FormMessage, SubmitButton } from '@/components/portal/forms'
 import { PAYMENT_METHOD, PAYMENT_TERMS, type PartnerOrder, type PaymentTerms } from '@/lib/partner'
 
 export function TransitionPanel({ order }: { order: PartnerOrder }) {
   const [state, action] = useActionState(orderTransitionAction, undefined)
   const s = order.status
   return (
-    <form action={action} className="pp-card no-print" onSubmit={e => {
-      const to = (e.nativeEvent as SubmitEvent).submitter?.getAttribute('value')
-      if (to === 'cancelled' && !confirm('Cancel this order? Any deducted warehouse stock will be returned.')) e.preventDefault()
-      if (to === 'delivered' && !confirm('Mark as delivered? The boxes will be added to the partner’s inventory.')) e.preventDefault()
+    <ActionForm action={action} className="pp-card no-print" beforeSubmit={submitter => {
+      const to = submitter?.getAttribute('value')
+      if (to === 'cancelled') return confirm('Cancel this order? Any deducted warehouse stock will be returned.')
+      if (to === 'delivered') return confirm('Mark as delivered? The boxes will be added to the partner’s inventory.')
+      return true
     }}>
       <input type="hidden" name="order_id" value={order.id} />
       <FormMessage state={state} />
@@ -28,14 +29,14 @@ export function TransitionPanel({ order }: { order: PartnerOrder }) {
         <SubmitButton name="to" value="cancelled" className="pp-btn pp-btn-danger" pendingText="…">Cancel order</SubmitButton>
       </div>
       {s === 'shipped' && <p className="pp-hint" style={{ marginTop: 10 }}>The partner can also confirm receipt from their portal.</p>}
-    </form>
+    </ActionForm>
   )
 }
 
 export function EditOrderForm({ order }: { order: PartnerOrder }) {
   const [state, action] = useActionState(updateOrderAction, undefined)
   return (
-    <form action={action}>
+    <ActionForm action={action}>
       <input type="hidden" name="order_id" value={order.id} />
       <FormMessage state={state} />
       <div className="pp-grid-2" style={{ gap: '0 16px' }}>
@@ -56,14 +57,14 @@ export function EditOrderForm({ order }: { order: PartnerOrder }) {
       <label className="pp-field"><span className="pp-label">Internal notes</span>
         <textarea className="pp-textarea" name="admin_notes" defaultValue={order.admin_notes ?? ''} maxLength={2000} style={{ minHeight: 60 }} /></label>
       <SubmitButton className="pp-btn pp-btn-sm">Save changes</SubmitButton>
-    </form>
+    </ActionForm>
   )
 }
 
 export function RecordPaymentForm({ orderId, balance, today }: { orderId: string; balance: number; today: string }) {
   const [state, action] = useActionState(recordPaymentAction, undefined)
   return (
-    <form action={action}>
+    <ActionForm action={action}>
       <input type="hidden" name="order_id" value={orderId} />
       <FormMessage state={state} />
       <div className="pp-grid-2" style={{ gap: '0 16px' }}>
@@ -83,6 +84,6 @@ export function RecordPaymentForm({ orderId, balance, today }: { orderId: string
       <label className="pp-row pp-muted" style={{ gap: 6, marginBottom: 14 }}><input type="checkbox" name="notify" defaultChecked /> Email a receipt to the partner</label>
       <SubmitButton className="pp-btn pp-btn-sm">Record payment</SubmitButton>
       <p className="pp-hint" style={{ marginTop: 8 }}>For consignment, record each settlement as units sell. Use “Return credit” when unsold stock comes back.</p>
-    </form>
+    </ActionForm>
   )
 }

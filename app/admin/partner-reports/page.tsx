@@ -1,5 +1,5 @@
 import { requireAdminPage } from '@/lib/auth'
-import { supabaseAdmin } from '@/lib/supabase'
+import { db } from '@/lib/db'
 import { buildReport, parseRange } from '@/lib/reports'
 import ReportView from '@/components/portal/ReportView'
 
@@ -7,10 +7,10 @@ export default async function AdminPartnerReportsPage({ searchParams }: { search
   await requireAdminPage()
   const sp = await searchParams
   const range = parseRange(sp)
-  const { data: partners } = await supabaseAdmin().from('sensare_partners').select('id, business_name').in('status', ['approved', 'suspended']).order('business_name')
-  const partnerId = partners?.some(p => p.id === sp.partner) ? sp.partner! : null
+  const partners = await db()<{ id: string; business_name: string }[]>`select id, business_name from sensare_partners where status in ('approved', 'suspended') order by business_name`
+  const partnerId = partners.some(p => p.id === sp.partner) ? sp.partner! : null
   const report = await buildReport(partnerId, range)
-  const name = partners?.find(p => p.id === partnerId)?.business_name
+  const name = partners.find(p => p.id === partnerId)?.business_name
   const qs = `preset=${range.preset}&from=${range.from}&to=${range.to}${partnerId ? `&partner=${partnerId}` : ''}`
 
   return (
@@ -24,7 +24,7 @@ export default async function AdminPartnerReportsPage({ searchParams }: { search
           <label><span className="pp-label">Partner</span>
             <select className="pp-select" name="partner" defaultValue={partnerId ?? ''} style={{ width: 'auto' }}>
               <option value="">All partners</option>
-              {(partners ?? []).map(p => <option key={p.id} value={p.id}>{p.business_name}</option>)}
+              {partners.map(p => <option key={p.id} value={p.id}>{p.business_name}</option>)}
             </select></label>
         }
       />
