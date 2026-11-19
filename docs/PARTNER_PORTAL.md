@@ -159,6 +159,19 @@ Partner owners add staff under **Portal → Team** with a login and the
 branch(es) they work at. Branch staff can only record daily sales and stock
 changes for those branches; they can't order or see prices, payments or reports.
 
+## Emails
+
+All emails use the site's blush/rose design (`lib/email-layout.ts`), come from
+`noreply@mysensare.com`, and replies go to **mysensare@gmail.com**.
+
+- **The shop inbox (mysensare@gmail.com) gets every alert:** new partner
+  applications and orders, bank transfers and collections to verify, late
+  consignment payments, paid shop orders, new newsletter subscribers and
+  contact-form messages. Team members whose role handles the alert (and the
+  partner's account manager) still get a copy.
+- Customers and partners get their own emails (approvals, order updates,
+  payment receipts, reminders, password resets, ritual guide, order confirmation).
+
 ## Security model
 
 - All data access is server-side with explicit checks (`lib/auth.ts`); every server

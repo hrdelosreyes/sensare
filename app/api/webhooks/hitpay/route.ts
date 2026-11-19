@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createHmac } from 'crypto'
 import { db, one } from '@/lib/db'
-import { Resend } from 'resend'
 import { PARTNER_REF_PREFIX } from '@/lib/hitpay'
 import { SETTLEMENT_REF_PREFIX } from '@/lib/consignment'
 import { manilaToday } from '@/lib/partner'
@@ -42,10 +41,10 @@ export async function POST(req: NextRequest) {
   }
 
   // Mark paid atomically; a repeated webhook finds nothing to update (idempotent).
-  const order = await one(db()<{ items: Array<{ product_id: string; qty: number }>; customer_email: string }[]>`
+  const order = await one(db()<{ items: Array<{ product_id: string; product_name?: string; qty: number; unit_price?: number }>; customer_email: string; customer_name: string; total_php: number }[]>`
     update sensare_orders set payment_status = 'paid', updated_at = now()
     where reference_number = ${refNum} and payment_status <> 'paid'
-    returning items, customer_email`)
+    returning items, customer_email, customer_name, total_php`)
   if (!order) {
     const exists = await one(db()`select 1 from sensare_orders where reference_number = ${refNum}`)
     return exists ? NextResponse.json({ ok: true }) : NextResponse.json({ error: 'Order not found' }, { status: 404 })
@@ -57,26 +56,11 @@ export async function POST(req: NextRequest) {
     if (!row?.ok) console.warn(`Stock insufficient for product ${item.product_id} — auto-replenish should cover this`)
   }
 
-  // Send confirmation email if we have a real email
-  if (order.customer_email && order.customer_email !== 'pending@sensare.com') {
-    const resend = new Resend(process.env.RESEND_API_KEY)
-    await resend.emails.send({
-      from: 'Sensarè Chocolates <noreply@mysensare.com>',
-      replyTo: 'mysensare@gmail.com',
-      to: order.customer_email,
-      subject: `Your Sensarè order is confirmed ♥`,
-      html: `
-        <div style="font-family:Georgia,serif;max-width:520px;margin:0 auto;background:#1c0e09;color:#faf0e4;padding:40px 32px;">
-          <h2 style="color:#c9906a;font-size:28px;margin-bottom:8px;">Your order is confirmed.</h2>
-          <p style="color:#e8d8c4;font-size:16px;line-height:1.8;margin-bottom:24px;">
-            Thank you for choosing Sensarè. Your ritual is on its way.
-          </p>
-          <p style="font-size:14px;color:#a08070;">Order reference: <strong style="color:#c9906a">${refNum}</strong></p>
-          <p style="font-size:14px;color:#a08070;margin-top:32px;font-style:italic;">Unwrap. Savor. Ignite. ♥</p>
-        </div>
-      `,
-    })
-  }
+  // Customer confirmation (when we have their email) + a copy of the order to the shop inbox
+  await email.shopOrderPaid({
+    reference: refNum, customer_email: order.customer_email, customer_name: order.customer_name,
+    total_php: order.total_php, items: order.items, phone: params.get('phone'),
+  })
 
   return NextResponse.json({ ok: true })
 }

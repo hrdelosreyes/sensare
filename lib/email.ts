@@ -2,44 +2,43 @@ import 'server-only'
 import { Resend } from 'resend'
 import { db } from './db'
 import { SITE_URL } from './seo'
+import { INBOX, brandEmail, callout, esc, muted } from './email-layout'
 
 const FROM = 'Sensarè Partners <noreply@mysensare.com>'
-const REPLY_TO = 'mysensare@gmail.com'
-
-function esc(s: unknown): string {
-  return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!))
-}
+const REPLY_TO = INBOX
 
 function layout(title: string, bodyHtml: string, cta?: { label: string; href: string }) {
-  return `
-  <div style="font-family:Georgia,serif;max-width:560px;margin:0 auto;background:#1c0e09;color:#faf0e4;padding:40px 32px;">
-    <p style="color:#c9906a;font-size:13px;letter-spacing:2px;text-transform:uppercase;margin:0 0 12px;">Sensarè Partner Program</p>
-    <h2 style="color:#faf0e4;font-size:24px;margin:0 0 20px;">${esc(title)}</h2>
-    <div style="color:#e8d8c4;font-size:15px;line-height:1.7;">${bodyHtml}</div>
-    ${cta ? `<p style="margin:28px 0 0;"><a href="${cta.href}" style="display:inline-block;background:#c9906a;color:#0f0705;padding:12px 24px;text-decoration:none;font-weight:bold;letter-spacing:1px;">${esc(cta.label)}</a></p>` : ''}
-    <p style="font-size:12px;color:#a08070;margin-top:36px;">Sensarè Chocolates · mysensare.com</p>
-  </div>`
+  return brandEmail({ eyebrow: 'Sensarè Partner Program', title, body: bodyHtml, cta })
 }
 
-// Never let an email failure break the user's action.
+const SHOP_FROM = 'Sensarè Chocolates <noreply@mysensare.com>'
+
 async function send(to: string | string[], subject: string, html: string) {
+  return sendAs(FROM, to, subject, html)
+}
+
+// Never let an email failure break the user's action (unless the caller asks).
+async function sendAs(from: string, to: string | string[], subject: string, html: string, replyTo = REPLY_TO, throwOnError = false) {
   const recipients = (Array.isArray(to) ? to : [to]).filter(Boolean)
   if (!recipients.length || !process.env.RESEND_API_KEY) return
   try {
-    await new Resend(process.env.RESEND_API_KEY).emails.send({ from: FROM, replyTo: REPLY_TO, to: recipients, subject, html })
+    const { error } = await new Resend(process.env.RESEND_API_KEY).emails.send({ from, replyTo, to: recipients, subject, html })
+    if (error) throw new Error(error.message)
   } catch (err) {
     console.error('Email send failed:', subject, err)
+    if (throwOnError) throw err
   }
 }
 
-// Staff alerts go to the roles that act on them, plus the partner's account manager.
+// Staff alerts go to the shop inbox, the roles that act on them, and the partner's account manager.
 async function staffEmails(roles: string[], partnerEmail?: string): Promise<string[]> {
   const rows = await db()<{ email: string }[]>`
     select email from sensare_admins where is_active and (
       role = any(${roles}::text[])
       or (role = 'account_manager' and ${partnerEmail ?? null}::text is not null and user_id in (
         select account_manager_id from sensare_partners where lower(email) = lower(${partnerEmail ?? ''}))))`
-  return [...new Set(rows.map(a => a.email))]
+  const seen = new Set<string>()
+  return [INBOX, ...rows.map(a => a.email)].filter(e => !seen.has(e.toLowerCase()) && !!seen.add(e.toLowerCase()))
 }
 
 export const email = {
@@ -61,11 +60,11 @@ export const email = {
     } else if (status === 'rejected') {
       await send(p.email, 'Update on your Sensarè partner application',
         layout(`Hi ${p.contact_name},`,
-          `<p>Thank you for your interest in becoming a Sensarè partner. We're unable to approve the application for <strong>${esc(p.business_name)}</strong> at this time.</p>${note ? `<p>${esc(note)}</p>` : ''}<p>You're welcome to reply to mysensare@gmail.com with any questions.</p>`))
+          `<p>Thank you for your interest in becoming a Sensarè partner. We're unable to approve the application for <strong>${esc(p.business_name)}</strong> at this time.</p>${note ? `<p>${esc(note)}</p>` : ''}<p>You're welcome to reply to ${INBOX} with any questions.</p>`))
     } else if (status === 'suspended') {
       await send(p.email, 'Your Sensarè partner account has been paused',
         layout(`Hi ${p.contact_name},`,
-          `<p>Access to the partner portal for <strong>${esc(p.business_name)}</strong> has been paused.</p>${note ? `<p>${esc(note)}</p>` : ''}<p>Please contact mysensare@gmail.com for details.</p>`))
+          `<p>Access to the partner portal for <strong>${esc(p.business_name)}</strong> has been paused.</p>${note ? `<p>${esc(note)}</p>` : ''}<p>Please contact ${INBOX} for details.</p>`))
     }
   },
 
@@ -135,7 +134,7 @@ export const email = {
   async lateSettlementPayment(settlementId: string, amount: number) {
     await send(await staffEmails(['owner', 'finance']), 'Check: late consignment payment received',
       layout('Late consignment payment',
-        `<p>HitPay confirmed a consignment payment of <strong>₱${amount.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</strong> after its checkout had expired. It has been recorded — please check the partner hasn't paid the same period twice.</p><p style="font-size:12px;color:#a08070;">Settlement ${esc(settlementId)}</p>`,
+        `<p>HitPay confirmed a consignment payment of <strong>₱${amount.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</strong> after its checkout had expired. It has been recorded — please check the partner hasn't paid the same period twice.</p>${muted(`Settlement ${esc(settlementId)}`)}`,
         { label: 'Open consignment', href: `${SITE_URL}/admin/consignment` }))
   },
 
@@ -151,5 +150,55 @@ export const email = {
       layout('Collection awaiting confirmation',
         `<p><strong>${esc(by)}</strong> logged a ${esc(method.replace('_', ' '))} collection of <strong>₱${amount.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</strong> from <strong>${esc(order.business_name)}</strong> for order ${esc(order.order_number)}. Confirm it once the money has arrived.</p>`,
         { label: 'Review collection', href: `${SITE_URL}/admin/partner-orders/${order.id}` }))
+  },
+
+  // ---- Online shop ----
+  async shopOrderPaid(order: { reference: string; customer_email?: string | null; customer_name?: string | null; total_php: number; items: Array<{ product_name?: string; qty: number; unit_price?: number }>; phone?: string | null }) {
+    const peso = (n: number) => `₱${Number(n).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`
+    const lines = order.items.map(i => `${esc(i.product_name ?? 'Item')} × ${i.qty}`).join('<br>')
+    const realEmail = order.customer_email && order.customer_email !== 'pending@sensare.com' ? order.customer_email : null
+    if (realEmail) {
+      await sendAs(SHOP_FROM, realEmail, 'Your Sensarè order is confirmed ♥', brandEmail({
+        eyebrow: 'Order confirmed',
+        title: 'Your ritual is on its way.',
+        body: `<p>Thank you for choosing Sensarè. We're preparing your order now.</p>${callout(`${lines}<br><strong style="color:#3B2026;">Total ${peso(order.total_php)}</strong><br>Reference: ${esc(order.reference)}`)}<p>Questions? Just reply to this email.</p>`,
+        signoff: 'Unwrap. Savor. Ignite. ♥',
+      }))
+    }
+    await sendAs(SHOP_FROM, INBOX, `New shop order ${order.reference} — ${peso(order.total_php)}`, brandEmail({
+      eyebrow: 'Online shop',
+      title: 'New paid order',
+      body: `<p>A shop order was paid through HitPay.</p>${callout(`${lines}<br><strong style="color:#3B2026;">Total ${peso(order.total_php)}</strong><br>Reference: ${esc(order.reference)}${realEmail ? `<br>Customer: ${esc(order.customer_name ?? '')} ${esc(realEmail)}` : ''}${order.phone ? `<br>Phone: ${esc(order.phone)}` : ''}`)}<p>Customer and delivery details are in your HitPay dashboard.</p>`,
+      cta: { label: 'Open admin', href: `${SITE_URL}/admin` },
+    }))
+  },
+
+  async ritualGuide(to: string) {
+    await sendAs(SHOP_FROM, to, 'Your Sensarè Ritual Guide ♥', brandEmail({
+      eyebrow: 'The Sensarè Ritual',
+      title: 'Your ritual guide',
+      body: `<p>Thank you for joining the Sensarè community. Here are the five steps — best enjoyed 30–60 minutes before an evening together.</p>${callout(
+        '<strong style="color:#A4523F;">01 · Set the Scene</strong> — Dim the lights, light a candle, phones away.<br>' +
+        '<strong style="color:#A4523F;">02 · Unwrap with Intention</strong> — Slow down. Breathe. Eye contact.<br>' +
+        '<strong style="color:#A4523F;">03 · Savor Slowly</strong> — Small bites. Let it melt. Describe the taste.<br>' +
+        '<strong style="color:#A4523F;">04 · Touch, Speak, Connect</strong> — “What do you feel? What do you desire?”<br>' +
+        '<strong style="color:#A4523F;">05 · Ignite</strong> — Let the evening unfold.')}`,
+      cta: { label: 'Shop the Collection', href: `${SITE_URL}/shop` },
+      signoff: 'Unwrap. Savor. Ignite. ♥',
+    }))
+  },
+
+  async newsletterSignup(subscriber: string) {
+    await sendAs(SHOP_FROM, INBOX, `New newsletter subscriber: ${subscriber}`, brandEmail({
+      eyebrow: 'Newsletter', title: 'New subscriber',
+      body: `<p><strong style="color:#3B2026;">${esc(subscriber)}</strong> signed up and was sent the Ritual Guide.</p>`,
+    }))
+  },
+
+  async contactMessage(m: { name: string; email: string; message: string }) {
+    await sendAs('Sensarè Contact <noreply@mysensare.com>', INBOX, `Contact from ${m.name}`, brandEmail({
+      eyebrow: 'Website contact form', title: `Message from ${m.name}`,
+      body: `<p>From <strong style="color:#3B2026;">${esc(m.name)}</strong> (<a href="mailto:${esc(m.email)}" style="color:#A4523F;">${esc(m.email)}</a>)</p>${callout(esc(m.message).replace(/\n/g, '<br>'))}<p>Reply to this email to answer them directly.</p>`,
+    }), m.email, true)
   },
 }
