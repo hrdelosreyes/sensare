@@ -1,6 +1,6 @@
 # Brand
 
-**Audience:** women — romantic gifting, intimacy, self-care. Grown-up and sensual, not "girly" (no bubblegum pink).
+**Audience:** women are the buyers and the voice we speak to; the product is for **couples** — she buys it to share with her husband or partner (date night, anniversaries, Valentine's, rekindling). Not a solo or self-care treat. Grown-up and sensual, not "girly" (no bubblegum pink).
 
 ## Typography
 | Use | Font |
