@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
+import { track, canTrack } from '@/lib/pixel'
 
 interface Props {
   productId: string
@@ -21,7 +22,7 @@ const label: React.CSSProperties = {
   color: 'var(--text-muted)', marginBottom: 6,
 }
 
-export default function CheckoutButton({ productId, price }: Props) {
+export default function CheckoutButton({ productId, productName, price }: Props) {
   const [qty, setQty] = useState(1)
   const [step, setStep] = useState<'qty' | 'details'>('qty')
   const [d, setD] = useState<Details>(EMPTY)
@@ -39,6 +40,15 @@ export default function CheckoutButton({ productId, price }: Props) {
   const set = (k: keyof Details) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setD(v => ({ ...v, [k]: e.target.value }))
   const subtotal = price * qty
   const shipping = subtotal >= 1000 ? 0 : 100
+  const pixelProduct = (value: number) => ({
+    content_ids: [productId], content_name: productName, content_type: 'product',
+    contents: [{ id: productId, quantity: qty, item_price: price }], num_items: qty, value, currency: 'PHP',
+  })
+
+  function startOrder() {
+    track('AddToCart', pixelProduct(subtotal))
+    setStep('details')
+  }
 
   async function pay(e: React.FormEvent) {
     e.preventDefault()
@@ -53,6 +63,11 @@ export default function CheckoutButton({ productId, price }: Props) {
       })
       const data = await res.json()
       if (!res.ok) { setError(data.error || 'Something went wrong.'); setLoading(false); return }
+      if (canTrack()) {
+        // Same event ID as the server-side (CAPI) event, so Meta counts it once.
+        track('InitiateCheckout', pixelProduct(data.value), data.eventId)
+        await new Promise(r => setTimeout(r, 300)) // let the Pixel request leave before we navigate
+      }
       window.location.href = data.url
     } catch {
       setError('Something went wrong. Please try again.')
@@ -81,7 +96,7 @@ export default function CheckoutButton({ productId, price }: Props) {
       </div>
 
       {step === 'qty' ? (
-        <button type="button" onClick={() => setStep('details')} style={button}>
+        <button type="button" onClick={startOrder} style={button}>
           Order Now · ₱{subtotal.toFixed(0)}
         </button>
       ) : (

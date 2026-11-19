@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import { db, one } from '@/lib/db'
 import CheckoutButton from '@/components/CheckoutButton'
+import { PixelEvent } from '@/components/MetaPixel'
 import RestockForm from '@/components/RestockForm'
 import JsonLd from '@/components/JsonLd'
 import { absoluteUrl } from '@/lib/seo'
@@ -98,6 +99,10 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
     <div style={{ paddingTop: 72 }}>
       <JsonLd data={productJsonLd} />
       <JsonLd data={faqJsonLd} />
+      <PixelEvent event="ViewContent" params={{
+        content_ids: [product.id], content_name: product.name, content_type: 'product',
+        value: Number(product.price_php), currency: 'PHP',
+      }} />
       {/* Product hero */}
       <div style={{ maxWidth: 1100, margin: '0 auto', padding: '64px 24px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 64, alignItems: 'start' }}>
         {/* Image */}

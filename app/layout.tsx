@@ -3,6 +3,7 @@ import './globals.css'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import JsonLd from '@/components/JsonLd'
+import MetaPixel from '@/components/MetaPixel'
 import { SITE_URL, SITE_NAME, SITE_DESCRIPTION, organizationJsonLd } from '@/lib/seo'
 
 export const metadata: Metadata = {
@@ -34,6 +35,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Navbar />
         <main style={{ flex: 1 }}>{children}</main>
         <Footer />
+        <MetaPixel />
       </body>
     </html>
   )

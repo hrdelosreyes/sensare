@@ -1,5 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse, after } from 'next/server'
 import { db, one } from '@/lib/db'
+import { adContextFrom, sendMetaEvent, orderCustomData } from '@/lib/meta'
 
 export async function POST(req: NextRequest) {
   try {
@@ -53,6 +54,8 @@ export async function POST(req: NextRequest) {
     }
 
     const hitpay = await hitpayRes.json()
+    const adContext = adContextFrom(req.cookies, req.headers)
+    const items = [{ product_id: productId, product_name: product.name, qty, unit_price: product.price_php }]
 
     // Create pending order
     await db()`insert into sensare_orders ${db()({
@@ -62,15 +65,27 @@ export async function POST(req: NextRequest) {
       customer_phone: c.phone,
       shipping_address: { address: c.address, city: c.city, province: c.province },
       notes: c.notes || null,
-      items: [{ product_id: productId, product_name: product.name, qty, unit_price: product.price_php }],
+      items,
       subtotal_php: total,
       shipping_php: shipping,
       total_php: grandTotal,
       payment_status: 'pending',
       hitpay_payment_id: hitpay.id,
+      ad_context: adContext,
     })}`
 
-    return NextResponse.json({ url: hitpay.url })
+    // Meta CAPI (opted-in shoppers only); the browser sends the same event with the same ID.
+    const eventId = `ic_${refNum}`
+    if (adContext) {
+      after(() => sendMetaEvent({
+        name: 'InitiateCheckout', eventId, ctx: adContext,
+        sourceUrl: adContext.url || `${process.env.NEXT_PUBLIC_APP_URL}/shop`,
+        shopper: { email: c.email, phone: c.phone, name: c.name, city: c.city, province: c.province },
+        custom: orderCustomData(items, grandTotal),
+      }))
+    }
+
+    return NextResponse.json({ url: hitpay.url, eventId, value: grandTotal })
   } catch (err) {
     console.error('Checkout error:', err)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
