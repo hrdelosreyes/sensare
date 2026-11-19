@@ -1,5 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse, after } from 'next/server'
 import { db, one } from '@/lib/db'
+import { adContextFrom, sendMetaEvent, orderCustomData } from '@/lib/meta'
 
 export async function POST(req: NextRequest) {
   try {
@@ -10,14 +11,14 @@ export async function POST(req: NextRequest) {
     if ('error' in c) return NextResponse.json({ error: c.error }, { status: 400 })
 
     if (typeof productId !== 'string' || !/^[0-9a-f-]{36}$/i.test(productId)) return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
-    const product = await one(db()<{ name: string; price_php: number; stock_qty: number }[]>`
+    const product = await one(db()<{ name: string; price_php: number; stock_qty: number; free_shipping: boolean }[]>`
       select * from sensare_products where id = ${productId} and is_active`)
 
     if (!product) return NextResponse.json({ error: 'Product not found' }, { status: 404 })
     if (product.stock_qty < qty) return NextResponse.json({ error: 'Not enough stock' }, { status: 409 })
 
     const total = product.price_php * qty
-    const shipping = total >= 1000 ? 0 : 100
+    const shipping = product.free_shipping || total >= 1000 ? 0 : 100
     const grandTotal = total + shipping
 
     const refNum = `sns_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
@@ -53,6 +54,8 @@ export async function POST(req: NextRequest) {
     }
 
     const hitpay = await hitpayRes.json()
+    const adContext = adContextFrom(req.cookies, req.headers)
+    const items = [{ product_id: productId, product_name: product.name, qty, unit_price: product.price_php }]
 
     // Create pending order
     await db()`insert into sensare_orders ${db()({
@@ -62,15 +65,27 @@ export async function POST(req: NextRequest) {
       customer_phone: c.phone,
       shipping_address: { address: c.address, city: c.city, province: c.province },
       notes: c.notes || null,
-      items: [{ product_id: productId, product_name: product.name, qty, unit_price: product.price_php }],
+      items,
       subtotal_php: total,
       shipping_php: shipping,
       total_php: grandTotal,
       payment_status: 'pending',
       hitpay_payment_id: hitpay.id,
+      ad_context: adContext,
     })}`
 
-    return NextResponse.json({ url: hitpay.url })
+    // Meta CAPI (opted-in shoppers only); the browser sends the same event with the same ID.
+    const eventId = `ic_${refNum}`
+    if (adContext) {
+      after(() => sendMetaEvent({
+        name: 'InitiateCheckout', eventId, ctx: adContext,
+        sourceUrl: adContext.url || `${process.env.NEXT_PUBLIC_APP_URL}/shop`,
+        shopper: { email: c.email, phone: c.phone, name: c.name, city: c.city, province: c.province },
+        custom: orderCustomData(items, grandTotal),
+      }))
+    }
+
+    return NextResponse.json({ url: hitpay.url, eventId, value: grandTotal })
   } catch (err) {
     console.error('Checkout error:', err)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

@@ -75,11 +75,12 @@ async function importFromSupabase() {
     for (let i = 0; i < rows.length; i += 200) {
       const batch = rows.slice(i, i + 200).map(r => Object.fromEntries(shared.map(c => [c, r[c]])))
       const res = table === 'sensare_products'
-        // Products keep Supabase's ids so order history and links still match; stock and
-        // prices are refreshed from Supabase while it remains the source.
+        // Products keep Supabase's ids so order history and links still match. Existing
+        // products are never overwritten: Neon is now the source of truth for names,
+        // prices and stock (edits made here must survive later deploys).
         ? await sql`insert into ${sql(table)} ${sql(batch, shared)}
-            on conflict (id) do update set ${sql(Object.fromEntries(shared.filter(c => c !== 'id').map(c => [c, sql`excluded.${sql(c)}`])))}
-            returning (xmax = 0) as inserted`
+            on conflict do nothing
+            returning true as inserted`
         : await sql`insert into ${sql(table)} ${sql(batch, shared)} on conflict do nothing returning 1`
       added += table === 'sensare_products' ? res.filter(r => r.inserted).length : res.count
     }

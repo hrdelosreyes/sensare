@@ -5,9 +5,9 @@
 |------|---------|---------|
 | Sensarè | Brand: 60% Davao dark chocolate + botanicals, couples ritual | mysensare.com |
 | Ritual | Brand concept/page (/pages/the-sensare-ritual) | |
-| Intimate Indulgence | 2-piece box, ₱295 SRP | product slug intimate-indulgence |
-| The Ritual Bundle | 3 boxes, ₱795 | ritual-bundle |
-| Lover's Gift Set | 6 pieces + candle + guide, ₱1,495 | lovers-gift-set |
+| Two Hearts | 2-piece box, ₱295 SRP (was "Intimate Indulgence", renamed Nov 2026) | slug two-hearts; /shop/intimate-indulgence redirects |
+| The Ritual Bundle | 2 boxes, ₱590, free shipping nationwide (Nov 2026; was 3 boxes ₱795) | ritual-bundle |
+| Lover's Gift Set | RETIRED Nov 2026 (hidden from shop + partners; kept for order history) | lovers-gift-set → /shop |
 | partner / reseller | Wholesale buyer using the Partner Portal | /partners |
 | case | 12 boxes (case_size, editable per product) | ordering unit |
 | default case price | Wholesale price per product (Partner Settings) | fallback |

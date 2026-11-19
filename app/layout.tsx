@@ -3,12 +3,13 @@ import './globals.css'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import JsonLd from '@/components/JsonLd'
+import MetaPixel from '@/components/MetaPixel'
 import { SITE_URL, SITE_NAME, SITE_DESCRIPTION, organizationJsonLd } from '@/lib/seo'
 
 export const metadata: Metadata = {
   title: { default: SITE_NAME, template: `%s | ${SITE_NAME}` },
   description: SITE_DESCRIPTION,
-  keywords: ['aphrodisiac chocolate', 'couples chocolate', 'Davao chocolate', 'intimate gift', 'dark chocolate Philippines'],
+  keywords: ['dark chocolate for couples', 'couples chocolate', 'Davao chocolate', 'gift for couples', 'dark chocolate Philippines'],
   metadataBase: new URL(SITE_URL),
   openGraph: {
     siteName: SITE_NAME,
@@ -34,6 +35,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Navbar />
         <main style={{ flex: 1 }}>{children}</main>
         <Footer />
+        <MetaPixel />
       </body>
     </html>
   )

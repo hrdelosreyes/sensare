@@ -8,6 +8,9 @@ const nextConfig: NextConfig = {
         destination: "/pages/the-sensare-ritual",
         permanent: true,
       },
+      // Nov 2026 catalogue: renamed and retired products
+      { source: "/shop/intimate-indulgence", destination: "/shop/two-hearts", permanent: true },
+      { source: "/shop/lovers-gift-set", destination: "/shop", permanent: true },
     ];
   },
 };

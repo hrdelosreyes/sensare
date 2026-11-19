@@ -8,7 +8,7 @@ import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
   title: { absolute: 'Dark Chocolate for Couples | Sensarè Chocolates' },
-  description: 'Sensarè crafts artisanal Davao dark chocolate infused with ancient botanicals — made for couples to awaken desire, elevate intimacy, and deepen connection.',
+  description: 'Sensarè crafts artisanal Davao dark chocolate infused with ancient botanicals — made for couples to slow down, reconnect, and make the evening theirs.',
   alternates: { canonical: '/' },
 }
 
@@ -55,7 +55,7 @@ export default async function HomePage() {
             Two Hearts.<br />One Indulgence.
           </h1>
           <p style={{ fontFamily: 'PlayfairDisplay', fontSize: 18, color: 'var(--cream-dim)', lineHeight: 1.8, maxWidth: 520, margin: '0 auto 40px' }}>
-            Artisanal dark chocolate infused with ancient botanicals — crafted to awaken desire, elevate intimacy, and deepen your connection.
+            Artisanal dark chocolate infused with ancient botanicals — crafted to slow you down, reconnect, and make the evening yours.
           </p>
           <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
             <Link href="/shop" style={{ padding: '16px 40px', background: 'var(--rose-gold)', color: 'var(--espresso)', fontFamily: 'PlayfairDisplay', fontWeight: 700, fontSize: 14, letterSpacing: 2, textTransform: 'uppercase', textDecoration: 'none', borderRadius: 2 }}>
@@ -156,9 +156,9 @@ export default async function HomePage() {
         <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 16, maxWidth: 800, margin: '0 auto' }}>
           {[
             { name: 'Davao Dark Chocolate', desc: '60% cacao, bold & complex' },
-            { name: 'Damiana', desc: 'Traditional herb for sensual energy' },
+            { name: 'Damiana', desc: 'Traditional herb for balance and vitality' },
             { name: 'Maca Root', desc: 'Andean superfood for vitality' },
-            { name: 'Ashwagandha', desc: 'Adaptogen for calm arousal' },
+            { name: 'Ashwagandha', desc: 'Adaptogen for calm and stress relief' },
             { name: 'Ceylon Cinnamon', desc: 'Warming spice, enhances circulation' },
             { name: 'Vegan', desc: 'No dairy, no animal products' },
           ].map(item => (
@@ -191,9 +191,8 @@ export default async function HomePage() {
 }
 
 const productImages: Record<string, string> = {
-  'intimate-indulgence': '/images/product-1.png',
+  'two-hearts': '/images/product-1.png',
   'ritual-bundle': '/images/product-2.png',
-  'lovers-gift-set': '/images/product-3.png',
 }
 
 function ProductCard({ product }: { product: Record<string, unknown> }) {
@@ -223,9 +222,10 @@ function ProductCard({ product }: { product: Record<string, unknown> }) {
         <p style={{ fontFamily: 'PlayfairDisplay', fontSize: 14, color: 'var(--cream-dim)', lineHeight: 1.7, marginBottom: 20, flex: 1 }}>
           {product.description as string}
         </p>
-        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '4px 10px', marginBottom: 16 }}>
           <span style={{ fontFamily: 'PlayfairDisplay', fontWeight: 700, fontSize: 22, color: 'var(--rose-gold)' }}>₱{(product.price_php as number).toFixed(0)}</span>
-          {hasDiscount && <span style={{ fontFamily: 'PlayfairDisplay', fontSize: 14, color: 'var(--text-muted)', textDecoration: 'line-through', marginLeft: 10 }}>₱{(product.compare_at_price_php as number).toFixed(0)}</span>}
+          {hasDiscount && <span style={{ fontFamily: 'PlayfairDisplay', fontSize: 14, color: 'var(--text-muted)', textDecoration: 'line-through' }}>₱{(product.compare_at_price_php as number).toFixed(0)}</span>}
+          {Boolean(product.free_shipping) && <span style={{ fontFamily: 'PlayfairDisplay', fontSize: 13, fontWeight: 700, color: 'var(--sage)' }}>Free shipping nationwide</span>}
         </div>
         {isOutOfStock ? (
           <RestockForm productId={product.id as string} productName={product.name as string} />

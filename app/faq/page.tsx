@@ -11,7 +11,7 @@ const faqs = [
   {
     category: 'Usage',
     items: [
-      { q: 'How do we enjoy Sensarè?', a: 'Share it as a ritual — 30 minutes to 1 hour before intimacy. Follow the 5-step Sensarè Ritual for the full experience.' },
+      { q: 'How do we enjoy Sensarè?', a: 'Share it as a ritual — 30 minutes to 1 hour before your time together. Follow the 5-step Sensarè Ritual for the full experience.' },
       { q: 'How many pieces per person?', a: 'One heart-shaped piece per partner, per session. That\'s one full box shared between two people.' },
       { q: 'When will we feel the effects?', a: 'Most couples notice a shift in mood and relaxation within 30–45 minutes. The botanicals work gradually — they\'re not stimulants.' },
     ],
@@ -20,7 +20,7 @@ const faqs = [
     category: 'Ingredients & Safety',
     items: [
       { q: 'What botanicals are in Sensarè?', a: 'Each piece contains 60% Davao dark chocolate, damiana leaf, maca root, ashwagandha, and ceylon cinnamon — all natural, traditionally used herbs.' },
-      { q: 'Is this safe to take regularly?', a: 'Yes. Sensarè is crafted with natural botanicals traditionally used to support vitality, balance, and sensual energy. We recommend one box per session.' },
+      { q: 'Is this safe to take regularly?', a: 'Yes. Sensarè is crafted with natural botanicals traditionally used to support vitality, balance, and overall wellbeing. We recommend one box per session.' },
       { q: 'Is this safe during pregnancy or breastfeeding?', a: 'No. We advise against it. Some botanicals (damiana, maca) are not recommended during pregnancy or lactation. Consult your healthcare provider.' },
       { q: 'Is this vegan?', a: 'Yes. Sensarè contains no dairy, no animal products, and is sweetened naturally.' },
       { q: 'Is this FDA-approved?', a: 'Sensarè is a food product made with natural ingredients — not a medicine or supplement. It is not intended to diagnose, treat, cure, or prevent any condition.' },
@@ -38,7 +38,7 @@ const faqs = [
     category: 'Orders & Shipping',
     items: [
       { q: 'Where do you ship?', a: 'Nationwide across the Philippines. Metro Manila orders arrive in 1–3 business days. Provincial orders via LBC, 3–7 business days.' },
-      { q: 'Is there free shipping?', a: 'Yes — free delivery on orders ₱1,000 and above.' },
+      { q: 'Is there free shipping?', a: 'Yes — The Ritual Bundle always ships free nationwide, and every order of ₱1,000 and above ships free.' },
       { q: 'How is it packaged?', a: 'Sensarè is packaged in a premium gift-ready box. It arrives looking exactly as it should for a gift.' },
       { q: 'Can I track my order?', a: 'Yes. You\'ll receive a tracking link by email once your order is dispatched.' },
       { q: 'What is your return policy?', a: 'Due to the perishable nature of our product, we do not accept returns. If your order arrives damaged or incorrect, contact us within 24 hours and we\'ll make it right.' },

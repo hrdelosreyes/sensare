@@ -8,7 +8,7 @@ import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
   title: 'Shop',
-  description: 'Artisanal dark chocolate for couples — single bars, bundles, and gift sets infused with ancient botanicals.',
+  description: 'Artisanal dark chocolate for couples — single boxes and bundles infused with ancient botanicals.',
   alternates: { canonical: '/shop' },
 }
 
@@ -31,9 +31,8 @@ export default async function ShopPage() {
             const isOutOfStock = (product.stock_qty as number) <= 0
             const hasDiscount = product.compare_at_price_php !== null
             const productImages: Record<string, string> = {
-              'intimate-indulgence': '/images/product-1.png',
+              'two-hearts': '/images/product-1.png',
               'ritual-bundle': '/images/product-2.png',
-              'lovers-gift-set': '/images/product-3.png',
             }
             const imgSrc = productImages[product.slug as string] || '/images/product-1.png'
 
@@ -60,6 +59,7 @@ export default async function ShopPage() {
                     <div>
                       <span style={{ fontFamily: 'PlayfairDisplay', fontWeight: 700, fontSize: 26, color: 'var(--rose-gold)' }}>₱{(product.price_php as number).toFixed(0)}</span>
                       {hasDiscount && <span style={{ fontFamily: 'PlayfairDisplay', fontSize: 15, color: 'var(--text-muted)', textDecoration: 'line-through', marginLeft: 10 }}>₱{(product.compare_at_price_php as number).toFixed(0)}</span>}
+                      {Boolean(product.free_shipping) && <span style={{ display: 'block', fontFamily: 'PlayfairDisplay', fontSize: 13, fontWeight: 700, color: 'var(--sage)', marginTop: 4 }}>Free shipping nationwide</span>}
                     </div>
                     {!isOutOfStock && <span style={{ fontFamily: 'PlayfairDisplay', fontSize: 12, color: 'var(--text-muted)' }}>{product.stock_qty as number} left</span>}
                   </div>

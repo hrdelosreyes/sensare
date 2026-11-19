@@ -4,7 +4,7 @@ import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
   title: 'The Ritual',
-  description: 'A five-step intimacy ritual for couples — unwrap, savor, and ignite connection with Sensarè Chocolates.',
+  description: 'A five-step ritual for couples to slow down and reconnect — unwrap, savor, and share Sensarè Chocolates.',
   alternates: { canonical: '/pages/the-sensare-ritual' },
 }
 
@@ -37,7 +37,7 @@ const steps = [
     num: '04',
     title: 'Touch, Speak, Connect',
     subtitle: 'Open the Heart',
-    body: 'As the chocolate settles, ask each other: "What do you feel right now?" and "What do you desire this evening?" Listen without judgment. The chocolate creates the space. You fill it.',
+    body: 'As the chocolate settles, ask each other: "What do you feel right now?" and "What do you need tonight?" Listen without judgment. The chocolate creates the space. You fill it.',
     tip: 'Tip: Keep answers simple. You don\'t need to perform. Just be honest.',
     image: '/images/ritual-4.png',
   },
@@ -74,7 +74,7 @@ export default function RitualPage() {
           Sensarè isn't just chocolate. It's an invitation — a five-step ritual to slow you down, open you up, and bring you closer.
         </p>
         <p style={{ fontFamily: 'PlayfairDisplay', fontStyle: 'italic', fontSize: 14, color: 'var(--text-muted)' }}>
-          Best practiced 30–60 minutes before intimacy.
+          Best practiced 30–60 minutes before your evening together.
         </p>
         </div>
       </section>

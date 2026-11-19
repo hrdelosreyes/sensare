@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { PIXEL_ID, CONSENT_OPEN_EVENT } from '@/lib/pixel'
 
 export default function Footer() {
   const [email, setEmail] = useState('')
@@ -101,6 +102,12 @@ export default function Footer() {
               textDecoration: 'none',
             }}>{l.label}</Link>
           ))}
+          {PIXEL_ID && (
+            <button type="button" onClick={() => window.dispatchEvent(new Event(CONSENT_OPEN_EVENT))} style={{
+              display: 'block', padding: 0, background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left',
+              fontFamily: 'PlayfairDisplay', fontSize: 14, color: 'var(--cream-dim)',
+            }}>Cookie Settings</button>
+          )}
         </div>
 
         <div>

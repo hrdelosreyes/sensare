@@ -1,13 +1,33 @@
 import Link from 'next/link'
 import type { Metadata } from 'next'
+import { db, one } from '@/lib/db'
+import { PixelEvent } from '@/components/MetaPixel'
 
 export const metadata: Metadata = { title: 'Order Confirmed', robots: { index: false, follow: false } }
 
-export default async function OrderConfirmPage({ searchParams }: { searchParams: Promise<{ ref?: string }> }) {
-  const { ref } = await searchParams
+type Item = { product_id: string; qty: number; unit_price?: number }
+
+export default async function OrderConfirmPage({ searchParams }: { searchParams: Promise<{ ref?: string; status?: string }> }) {
+  const { ref, status } = await searchParams
+
+  // Browser-side Purchase for the Meta Pixel. Only when the payment went through (the webhook
+  // may land a moment after HitPay redirects here, so HitPay's "completed" status also counts).
+  const order = ref && /^sns_[a-z0-9_]{1,40}$/i.test(ref)
+    ? await one(db()<{ items: Item[]; total_php: number; payment_status: string }[]>`
+        select items, total_php, payment_status from sensare_orders where reference_number = ${ref}`)
+    : null
+  const paid = order && (order.payment_status === 'paid' || (order.payment_status === 'pending' && status === 'completed'))
 
   return (
     <div style={{ paddingTop: 72, minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '120px 24px' }}>
+      {paid && (
+        <PixelEvent event="Purchase" eventId={ref} once={ref} params={{
+          currency: 'PHP', value: Number(order.total_php), content_type: 'product',
+          content_ids: order.items.map(i => i.product_id),
+          contents: order.items.map(i => ({ id: i.product_id, quantity: i.qty, item_price: Number(i.unit_price ?? 0) })),
+          num_items: order.items.reduce((n, i) => n + i.qty, 0),
+        }} />
+      )}
       <div style={{ textAlign: 'center', maxWidth: 540 }}>
         <p style={{ fontFamily: 'Allura', fontSize: 56, color: 'var(--rose-gold)', marginBottom: 8 }}>♥</p>
         <h1 style={{ fontFamily: 'PlayfairDisplay', fontWeight: 700, fontSize: 'clamp(28px, 4vw, 44px)', color: 'var(--cream)', marginBottom: 16 }}>

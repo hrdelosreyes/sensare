@@ -5,6 +5,7 @@ import { PARTNER_REF_PREFIX } from '@/lib/hitpay'
 import { SETTLEMENT_REF_PREFIX } from '@/lib/consignment'
 import { manilaToday } from '@/lib/partner'
 import { email } from '@/lib/email'
+import { sendMetaEvent, orderCustomData, type AdContext } from '@/lib/meta'
 
 function verifySignature(payload: string, signature: string): boolean {
   const hmac = createHmac('sha256', process.env.HITPAY_SALT!)
@@ -35,16 +36,16 @@ export async function POST(req: NextRequest) {
   }
 
   if (status !== 'completed') {
-    await db()`update sensare_orders set payment_status = 'failed', updated_at = now()
+    await db()`update sensare_orders set payment_status = 'failed', ad_context = null, updated_at = now()
       where reference_number = ${refNum} and payment_status <> 'paid'`
     return NextResponse.json({ ok: true })
   }
 
   // Mark paid atomically; a repeated webhook finds nothing to update (idempotent).
-  const order = await one(db()<{ items: Array<{ product_id: string; product_name?: string; qty: number; unit_price?: number }>; customer_email: string; customer_name: string; customer_phone: string | null; shipping_address: { address?: string; city?: string; province?: string } | null; notes: string | null; total_php: number }[]>`
+  const order = await one(db()<{ items: Array<{ product_id: string; product_name?: string; qty: number; unit_price?: number }>; customer_email: string; customer_name: string; customer_phone: string | null; shipping_address: { address?: string; city?: string; province?: string } | null; notes: string | null; total_php: number; ad_context: AdContext | null }[]>`
     update sensare_orders set payment_status = 'paid', updated_at = now()
     where reference_number = ${refNum} and payment_status <> 'paid'
-    returning items, customer_email, customer_name, customer_phone, shipping_address, notes, total_php`)
+    returning items, customer_email, customer_name, customer_phone, shipping_address, notes, total_php, ad_context`)
   if (!order) {
     const exists = await one(db()`select 1 from sensare_orders where reference_number = ${refNum}`)
     return exists ? NextResponse.json({ ok: true }) : NextResponse.json({ error: 'Order not found' }, { status: 404 })
@@ -62,6 +63,22 @@ export async function POST(req: NextRequest) {
     total_php: order.total_php, items: order.items, phone: order.customer_phone || params.get('phone'),
     address: order.shipping_address, notes: order.notes,
   })
+
+  // Meta CAPI Purchase — only for shoppers who accepted advertising cookies. event_id is the
+  // order reference, the same ID the confirmation page's Pixel uses, so Meta counts it once.
+  if (order.ad_context) {
+    await sendMetaEvent({
+      name: 'Purchase', eventId: refNum, ctx: order.ad_context,
+      sourceUrl: `${process.env.NEXT_PUBLIC_APP_URL}/order/confirm?ref=${refNum}`,
+      shopper: {
+        email: order.customer_email, phone: order.customer_phone, name: order.customer_name,
+        city: order.shipping_address?.city, province: order.shipping_address?.province,
+      },
+      custom: { ...orderCustomData(order.items, order.total_php), order_id: refNum },
+    })
+    // Browser details are no longer needed once reported.
+    await db()`update sensare_orders set ad_context = null where reference_number = ${refNum}`
+  }
 
   return NextResponse.json({ ok: true })
 }
