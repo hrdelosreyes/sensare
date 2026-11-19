@@ -12,7 +12,7 @@
 ## Colour
 Current site (until changed): monochromatic warm brown/rose gold (hue 12–33°) on near-black. Owner finds it too dark.
 
-Applied 2026-11-19 (review: https://claude.ai/artifact/8CvmHXVMANuVi2u7xGmCXf). Tokens live in `app/globals.css` (`--bg`, `--fg`, `--accent`, `--berry`, `--sage`…; old names like `--cream`/`--rose-gold` are mapped onto them). Wrap dark image bands and the footer in `className="on-dark"`. Emails and the share (OG) image are still dark.
+Applied 2026-11-19 (review: https://claude.ai/artifact/8CvmHXVMANuVi2u7xGmCXf). Tokens live in `app/globals.css` (`--bg`, `--fg`, `--accent`, `--berry`, `--sage`…; old names like `--cream`/`--rose-gold` are mapped onto them). Wrap dark image bands and the footer in `className="on-dark"`. Emails (`lib/email-layout.ts`) and the share image (`app/opengraph-image.tsx`) use the light palette too.
 analogous rose-gold (24°) → rose/berry (~345°) family + split-complementary sage-eucalyptus (171°); 60/30/10.
 
 | Role | Hex |
