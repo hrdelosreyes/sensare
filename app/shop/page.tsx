@@ -1,4 +1,5 @@
-export const dynamic = 'force-dynamic'
+// Cached; rebuilt at most once a minute, and right away when stock changes (lib/shop-cache.ts).
+export const revalidate = 60
 
 import Link from 'next/link'
 import Image from 'next/image'
@@ -27,19 +28,19 @@ export default async function ShopPage() {
 
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: '64px 24px' }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 40 }}>
-          {(products || []).map((product: Record<string, unknown>) => {
+          {(products || []).map((product: Record<string, unknown>, i: number) => {
             const isOutOfStock = (product.stock_qty as number) <= 0
             const hasDiscount = product.compare_at_price_php !== null
             const productImages: Record<string, string> = {
-              'two-hearts': '/images/product-1.png',
-              'ritual-bundle': '/images/product-2.png',
+              'two-hearts': '/images/product-1.jpg',
+              'ritual-bundle': '/images/product-2.jpg',
             }
-            const imgSrc = productImages[product.slug as string] || '/images/product-1.png'
+            const imgSrc = productImages[product.slug as string] || '/images/product-1.jpg'
 
             return (
               <div key={product.id as string} style={{ background: 'var(--chocolate)', border: '1px solid rgba(164,82,63,0.15)', borderRadius: 4, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
                 <div style={{ height: 320, position: 'relative', overflow: 'hidden' }}>
-                  <Image src={imgSrc} alt={product.name as string} fill style={{ objectFit: 'cover', objectPosition: 'center' }} />
+                  <Image src={imgSrc} alt={product.name as string} fill sizes="(max-width: 768px) 100vw, 400px" preload={i === 0} style={{ objectFit: 'cover', objectPosition: 'center' }} />
                   {isOutOfStock && (
                     <div style={{ position: 'absolute', top: 20, left: 20, background: 'rgba(252,245,242,0.92)', padding: '5px 14px', fontFamily: 'PlayfairDisplay', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--fg-soft)' }}>Sold Out</div>
                   )}

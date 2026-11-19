@@ -15,7 +15,7 @@ const steps = [
     subtitle: 'Create the Container',
     body: 'Dim the lights. Light a candle. Play something soft. Turn your phones face-down. Sit close enough to touch. This moment belongs to you both — protect it.',
     tip: 'Tip: Use a scent you both love. Jasmine, sandalwood, or ylang-ylang work beautifully alongside dark chocolate.',
-    image: '/images/ritual-1.png',
+    image: '/images/ritual-1.jpg',
   },
   {
     num: '02',
@@ -23,7 +23,7 @@ const steps = [
     subtitle: 'Begin with Presence',
     body: 'Open the Sensarè box slowly. Notice the colour of the chocolate. Lift it to your nose and breathe. Let each partner select their piece. Make eye contact before you begin.',
     tip: 'Tip: Don\'t rush. The anticipation is part of the ritual.',
-    image: '/images/ritual-2.png',
+    image: '/images/ritual-2.jpg',
   },
   {
     num: '03',
@@ -31,7 +31,7 @@ const steps = [
     subtitle: 'Awaken the Senses',
     body: 'Close your eyes. Take a small bite. Let it melt. Describe what you taste to each other — "rich", "earthy", "floral", "warm." There are no wrong answers. Just presence.',
     tip: 'Tip: Let it melt completely before swallowing. The botanicals need time to release.',
-    image: '/images/ritual-3.png',
+    image: '/images/ritual-3.jpg',
   },
   {
     num: '04',
@@ -39,7 +39,7 @@ const steps = [
     subtitle: 'Open the Heart',
     body: 'As the chocolate settles, ask each other: "What do you feel right now?" and "What do you need tonight?" Listen without judgment. The chocolate creates the space. You fill it.',
     tip: 'Tip: Keep answers simple. You don\'t need to perform. Just be honest.',
-    image: '/images/ritual-4.png',
+    image: '/images/ritual-4.jpg',
   },
   {
     num: '05',
@@ -47,7 +47,7 @@ const steps = [
     subtitle: 'Let the Evening Unfold',
     body: 'There is no script for what happens next. A slow dance. A massage. A bath together. A long embrace in silence. Follow what feels natural — you\'ve already done the work of arriving.',
     tip: 'Tip: Repeat this ritual whenever you feel disconnected. Love is a practice.',
-    image: '/images/ritual-5.png',
+    image: '/images/ritual-5.jpg',
   },
 ]
 
@@ -63,7 +63,7 @@ export default function RitualPage() {
       }}>
         {/* Decorative wave — bottom left */}
         <div style={{ position: 'absolute', bottom: -30, left: -40, width: 380, height: 320, pointerEvents: 'none', opacity: 0.08, filter: 'invert(1) sepia(0.2) brightness(1.5)' }}>
-          <Image src="/Asset 4.png" alt="" fill style={{ objectFit: 'contain' }} />
+          <Image src="/Asset 4.png" alt="" fill sizes="380px" loading="eager" style={{ objectFit: 'contain' }} />
         </div>
         <div style={{ position: 'relative' }}>
         <p style={{ fontFamily: 'Allura', fontSize: 36, color: 'var(--rose-gold)', marginBottom: 12 }}>The Sensarè Ritual</p>
@@ -85,7 +85,7 @@ export default function RitualPage() {
           <div key={step.num} style={{ marginBottom: 80 }}>
             {/* Step image — full width, cinematic */}
             <div style={{ position: 'relative', height: 360, borderRadius: 4, overflow: 'hidden', marginBottom: 36 }}>
-              <Image src={step.image} alt={step.title} fill style={{ objectFit: 'cover', objectPosition: 'center' }} />
+              <Image src={step.image} alt={step.title} fill sizes="(max-width: 848px) 100vw, 752px" style={{ objectFit: 'cover', objectPosition: 'center' }} />
               <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(51,25,31,0.7) 0%, transparent 60%)' }} />
               <p style={{ position: 'absolute', bottom: 20, left: 24, fontFamily: 'OleoScript', fontSize: 56, color: 'rgba(232,191,160,0.9)', lineHeight: 1 }}>{step.num}</p>
             </div>

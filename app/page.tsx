@@ -1,4 +1,5 @@
-export const dynamic = 'force-dynamic'
+// Cached; rebuilt at most once a minute, and right away when stock changes (lib/shop-cache.ts).
+export const revalidate = 60
 
 import Link from 'next/link'
 import Image from 'next/image'
@@ -40,13 +41,13 @@ export default async function HomePage() {
         padding: '120px 24px 80px', textAlign: 'center',
       }}>
         {/* Full-bleed hero image */}
-        <Image src="/images/hero.png" alt="Sensarè couple" fill priority
+        <Image src="/images/hero.jpg" alt="Sensarè couple" fill preload sizes="100vw"
           style={{ objectFit: 'cover', objectPosition: 'center top' }} />
         {/* Dark overlay */}
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(51,25,31,0.5) 0%, rgba(51,25,31,0.72) 100%)' }} />
         {/* Decorative wave — top right */}
         <div style={{ position: 'absolute', top: -40, right: -60, width: 520, height: 340, pointerEvents: 'none', opacity: 0.09, filter: 'invert(1) sepia(0.2) brightness(1.5)' }}>
-          <Image src="/Asset 1.png" alt="" fill style={{ objectFit: 'contain' }} />
+          <Image src="/Asset 1.png" alt="" fill sizes="520px" loading="eager" style={{ objectFit: 'contain' }} />
         </div>
 
         <div style={{ position: 'relative', maxWidth: 720 }}>
@@ -86,7 +87,7 @@ export default async function HomePage() {
 
       {/* Brand story strip */}
       <section className="on-dark" style={{ position: 'relative', overflow: 'hidden' }}>
-        <Image src="/images/brand-story.png" alt="Ana & Ramon" fill style={{ objectFit: 'cover', objectPosition: 'center' }} />
+        <Image src="/images/brand-story.jpg" alt="Ana & Ramon" fill sizes="100vw" style={{ objectFit: 'cover', objectPosition: 'center' }} />
         <div style={{ position: 'absolute', inset: 0, background: 'rgba(51,25,31,0.78)' }} />
         <div style={{ maxWidth: 800, margin: '0 auto', textAlign: 'center', padding: '80px 24px', position: 'relative' }}>
           <p style={{ fontFamily: 'Allura', fontSize: 36, color: 'var(--rose-gold)', marginBottom: 16 }}>Born from Davao</p>
@@ -149,7 +150,7 @@ export default async function HomePage() {
       <section style={{ padding: '80px 24px', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
         {/* Decorative wave — full width */}
         <div style={{ position: 'absolute', bottom: -20, left: '50%', transform: 'translateX(-50%)', width: '110%', height: 120, pointerEvents: 'none', opacity: 0.07, filter: 'invert(1) sepia(0.2) brightness(1.5)' }}>
-          <Image src="/Asset 3.png" alt="" fill style={{ objectFit: 'contain' }} />
+          <Image src="/Asset 3.png" alt="" fill sizes="110vw" loading="eager" style={{ objectFit: 'contain' }} />
         </div>
         <p style={{ fontFamily: 'Allura', fontSize: 30, color: 'var(--rose-gold)', marginBottom: 12 }}>What's Inside</p>
         <h2 style={{ fontFamily: 'PlayfairDisplay', fontWeight: 700, fontSize: 28, color: 'var(--cream)', marginBottom: 40 }}>Ancient Botanicals. Modern Love.</h2>
@@ -174,7 +175,7 @@ export default async function HomePage() {
       <section style={{ padding: '100px 24px', textAlign: 'center', background: `radial-gradient(ellipse at center, rgba(164,82,63,0.1) 0%, transparent 70%), var(--mocha)`, borderTop: '1px solid rgba(164,82,63,0.1)', position: 'relative', overflow: 'hidden' }}>
         {/* Decorative wave — centered behind text */}
         <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 700, height: 240, pointerEvents: 'none', opacity: 0.08, filter: 'invert(1) sepia(0.2) brightness(1.5)' }}>
-          <Image src="/Asset 2.png" alt="" fill style={{ objectFit: 'contain' }} />
+          <Image src="/Asset 2.png" alt="" fill sizes="700px" loading="eager" style={{ objectFit: 'contain' }} />
         </div>
         <div style={{ position: 'relative' }}>
           <p style={{ fontFamily: 'Allura', fontSize: 40, color: 'var(--rose-gold)', marginBottom: 16 }}>Ready to Begin?</p>
@@ -191,19 +192,19 @@ export default async function HomePage() {
 }
 
 const productImages: Record<string, string> = {
-  'two-hearts': '/images/product-1.png',
-  'ritual-bundle': '/images/product-2.png',
+  'two-hearts': '/images/product-1.jpg',
+  'ritual-bundle': '/images/product-2.jpg',
 }
 
 function ProductCard({ product }: { product: Record<string, unknown> }) {
   const isOutOfStock = (product.stock_qty as number) <= 0
   const hasDiscount = product.compare_at_price_php !== null
-  const imgSrc = productImages[product.slug as string] || '/images/product-1.png'
+  const imgSrc = productImages[product.slug as string] || '/images/product-1.jpg'
 
   return (
     <div style={{ background: 'var(--chocolate)', border: '1px solid rgba(164,82,63,0.15)', borderRadius: 4, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
       <div style={{ height: 280, position: 'relative', overflow: 'hidden' }}>
-        <Image src={imgSrc} alt={product.name as string} fill style={{ objectFit: 'cover', objectPosition: 'center', transition: 'transform 0.4s ease' }} />
+        <Image src={imgSrc} alt={product.name as string} fill sizes="(max-width: 768px) 100vw, 400px" style={{ objectFit: 'cover', objectPosition: 'center', transition: 'transform 0.4s ease' }} />
         {isOutOfStock && (
           <div style={{ position: 'absolute', top: 16, right: 16, background: 'rgba(252,245,242,0.92)', padding: '4px 12px', fontFamily: 'PlayfairDisplay', fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--fg-soft)' }}>
             Sold Out

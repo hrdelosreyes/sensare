@@ -8,13 +8,18 @@ import JsonLd from '@/components/JsonLd'
 import { absoluteUrl } from '@/lib/seo'
 import type { Metadata } from 'next'
 
+// Cached; rebuilt at most once a minute, and right away when stock changes (lib/shop-cache.ts).
+export const revalidate = 60
+// Product pages are built on first visit, then served from the cache.
+export async function generateStaticParams() { return [] }
+
 const PRODUCT_IMAGES: Record<string, string> = {
-  'two-hearts': '/images/product-1.png',
-  'ritual-bundle': '/images/product-2.png',
+  'two-hearts': '/images/product-1.jpg',
+  'ritual-bundle': '/images/product-2.jpg',
 }
 
 function productImage(slug: string): string {
-  return PRODUCT_IMAGES[slug] || '/images/product-1.png'
+  return PRODUCT_IMAGES[slug] || '/images/product-1.jpg'
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
@@ -108,7 +113,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
         <div style={{ borderRadius: 4, overflow: 'hidden', position: 'relative', minHeight: 420, border: '1px solid rgba(164,82,63,0.15)' }}>
           <Image
             src={productImage(product.slug)}
-            alt={product.name} fill style={{ objectFit: 'cover', objectPosition: 'center' }}
+            alt={product.name} fill preload sizes="(max-width: 768px) 100vw, 520px" style={{ objectFit: 'cover', objectPosition: 'center' }}
           />
           {isOutOfStock && (
             <div style={{ position: 'absolute', top: 20, left: 20, background: 'rgba(252,245,242,0.92)', padding: '6px 16px', fontFamily: 'PlayfairDisplay', fontSize: 12, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--fg-soft)' }}>Sold Out</div>

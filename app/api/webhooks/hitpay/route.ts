@@ -5,6 +5,7 @@ import { PARTNER_REF_PREFIX } from '@/lib/hitpay'
 import { SETTLEMENT_REF_PREFIX } from '@/lib/consignment'
 import { manilaToday } from '@/lib/partner'
 import { email } from '@/lib/email'
+import { refreshShopPages } from '@/lib/shop-cache'
 import { sendMetaEvent, orderCustomData, type AdContext } from '@/lib/meta'
 
 function verifySignature(payload: string, signature: string): boolean {
@@ -56,6 +57,7 @@ export async function POST(req: NextRequest) {
     const row = await one(db()<{ ok: boolean }[]>`select sensare_decrement_stock(${item.product_id}::uuid, ${item.qty}::int) as ok`)
     if (!row?.ok) console.warn(`Stock insufficient for product ${item.product_id} — auto-replenish should cover this`)
   }
+  refreshShopPages()
 
   // Customer confirmation (when we have their email) + a copy of the order to the shop inbox
   await email.shopOrderPaid({

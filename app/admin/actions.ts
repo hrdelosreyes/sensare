@@ -1,4 +1,5 @@
 'use server'
+import { refreshShopPages } from '@/lib/shop-cache'
 
 import { randomBytes } from 'crypto'
 import { revalidatePath } from 'next/cache'
@@ -192,6 +193,7 @@ export async function orderTransitionAction(_prev: FormState, fd: FormData): Pro
 
   await email.orderStatusChanged({ ...order, tracking_info: tracking }, { email: order.partner_email }, to)
   revalidatePath('/admin/partner-orders', 'layout')
+  refreshShopPages() // partner orders move warehouse stock
   return { ok: `Order marked ${to}.` }
 }
 
