@@ -153,22 +153,25 @@ export const email = {
   },
 
   // ---- Online shop ----
-  async shopOrderPaid(order: { reference: string; customer_email?: string | null; customer_name?: string | null; total_php: number; items: Array<{ product_name?: string; qty: number; unit_price?: number }>; phone?: string | null }) {
+  async shopOrderPaid(order: { reference: string; customer_email?: string | null; customer_name?: string | null; total_php: number; items: Array<{ product_name?: string; qty: number; unit_price?: number }>; phone?: string | null; address?: { address?: string; city?: string; province?: string } | null; notes?: string | null }) {
     const peso = (n: number) => `₱${Number(n).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`
     const lines = order.items.map(i => `${esc(i.product_name ?? 'Item')} × ${i.qty}`).join('<br>')
     const realEmail = order.customer_email && order.customer_email !== 'pending@sensare.com' ? order.customer_email : null
+    const a = order.address
+    const deliverTo = a?.address ? `${esc(order.customer_name ?? '')}<br>${esc(a.address)}<br>${esc([a.city, a.province].filter(Boolean).join(', '))}${order.phone ? `<br>${esc(order.phone)}` : ''}` : ''
+    const notes = order.notes ? `<br><em>Notes: ${esc(order.notes)}</em>` : ''
     if (realEmail) {
       await sendAs(SHOP_FROM, realEmail, 'Your Sensarè order is confirmed ♥', brandEmail({
         eyebrow: 'Order confirmed',
         title: 'Your ritual is on its way.',
-        body: `<p>Thank you for choosing Sensarè. We're preparing your order now.</p>${callout(`${lines}<br><strong style="color:#3B2026;">Total ${peso(order.total_php)}</strong><br>Reference: ${esc(order.reference)}`)}<p>Questions? Just reply to this email.</p>`,
+        body: `<p>Thank you for choosing Sensarè. We're preparing your order now.</p>${callout(`${lines}<br><strong style="color:#3B2026;">Total ${peso(order.total_php)}</strong> <span style="font-size:12px;">incl. shipping</span><br>Reference: ${esc(order.reference)}`)}${deliverTo ? `<p style="margin:0 0 4px;color:#3B2026;"><strong>Delivering to</strong></p><p style="margin:0 0 16px;">${deliverTo}${notes}</p>` : ''}<p>Questions about your order? Just reply to this email.</p>`,
         signoff: 'Unwrap. Savor. Ignite. ♥',
       }))
     }
     await sendAs(SHOP_FROM, INBOX, `New shop order ${order.reference} — ${peso(order.total_php)}`, brandEmail({
       eyebrow: 'Online shop',
       title: 'New paid order',
-      body: `<p>A shop order was paid through HitPay.</p>${callout(`${lines}<br><strong style="color:#3B2026;">Total ${peso(order.total_php)}</strong><br>Reference: ${esc(order.reference)}${realEmail ? `<br>Customer: ${esc(order.customer_name ?? '')} ${esc(realEmail)}` : ''}${order.phone ? `<br>Phone: ${esc(order.phone)}` : ''}`)}<p>Customer and delivery details are in your HitPay dashboard.</p>`,
+      body: `<p>A shop order was paid through HitPay.</p>${callout(`${lines}<br><strong style="color:#3B2026;">Total ${peso(order.total_php)}</strong> <span style="font-size:12px;">incl. shipping</span><br>Reference: ${esc(order.reference)}`)}${deliverTo ? `<p style="margin:0 0 4px;color:#3B2026;"><strong>Deliver to</strong></p><p style="margin:0 0 16px;">${deliverTo}${realEmail ? `<br><a href="mailto:${esc(realEmail)}" style="color:#A4523F;">${esc(realEmail)}</a>` : ''}${notes}</p>` : `<p>Customer and delivery details are in your HitPay dashboard.</p>`}`,
       cta: { label: 'Open admin', href: `${SITE_URL}/admin` },
     }))
   },

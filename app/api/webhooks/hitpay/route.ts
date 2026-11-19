@@ -41,10 +41,10 @@ export async function POST(req: NextRequest) {
   }
 
   // Mark paid atomically; a repeated webhook finds nothing to update (idempotent).
-  const order = await one(db()<{ items: Array<{ product_id: string; product_name?: string; qty: number; unit_price?: number }>; customer_email: string; customer_name: string; total_php: number }[]>`
+  const order = await one(db()<{ items: Array<{ product_id: string; product_name?: string; qty: number; unit_price?: number }>; customer_email: string; customer_name: string; customer_phone: string | null; shipping_address: { address?: string; city?: string; province?: string } | null; notes: string | null; total_php: number }[]>`
     update sensare_orders set payment_status = 'paid', updated_at = now()
     where reference_number = ${refNum} and payment_status <> 'paid'
-    returning items, customer_email, customer_name, total_php`)
+    returning items, customer_email, customer_name, customer_phone, shipping_address, notes, total_php`)
   if (!order) {
     const exists = await one(db()`select 1 from sensare_orders where reference_number = ${refNum}`)
     return exists ? NextResponse.json({ ok: true }) : NextResponse.json({ error: 'Order not found' }, { status: 404 })
@@ -59,7 +59,8 @@ export async function POST(req: NextRequest) {
   // Customer confirmation (when we have their email) + a copy of the order to the shop inbox
   await email.shopOrderPaid({
     reference: refNum, customer_email: order.customer_email, customer_name: order.customer_name,
-    total_php: order.total_php, items: order.items, phone: params.get('phone'),
+    total_php: order.total_php, items: order.items, phone: order.customer_phone || params.get('phone'),
+    address: order.shipping_address, notes: order.notes,
   })
 
   return NextResponse.json({ ok: true })
