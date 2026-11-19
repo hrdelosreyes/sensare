@@ -3,27 +3,21 @@
 -- Seed products
 insert into sensare_products (slug, name, tagline, description, price_php, compare_at_price_php, stock_qty, sort_order) values
 (
-  'intimate-indulgence',
-  'Intimate Indulgence',
-  'Two Hearts. One Ritual.',
-  'Two heart-shaped pieces of 60% Davao dark chocolate, infused with damiana, maca, and ashwagandha — botanicals cherished for centuries to awaken desire and deepen connection. Best shared 30 minutes before your moment.',
+  'two-hearts',
+  'Two Hearts',
+  'One Box. Shared by Two.',
+  'Two heart-shaped pieces of 60% Davao dark chocolate, infused with damiana, maca, and ashwagandha — botanicals cherished for centuries for vitality and balance. One piece each, shared 30 minutes before your evening together.',
   295, null, 0, 1
 ),
 (
   'ritual-bundle',
   'The Ritual Bundle',
-  'Three Nights. Three Rituals.',
-  'Three boxes of Intimate Indulgence — enough for three intentional evenings together. Gift it to a partner, or build a habit of closeness. Includes a printed Ritual Card.',
-  795, 885, 20, 2
-),
-(
-  'lovers-gift-set',
-  'Lover''s Gift Set',
-  'The Complete Sensarè Experience.',
-  'Six heart-shaped chocolates in a premium gift box, paired with a hand-poured ritual candle and an embossed Ritual Guide booklet. For anniversaries, Valentine''s, or any moment worth celebrating.',
-  1495, 1800, 15, 3
+  'Two Nights. Two Rituals.',
+  'Two boxes of Two Hearts — enough for two intentional evenings together. Gift it to your partner, or make the ritual a habit. Free shipping nationwide.',
+  590, null, 20, 2
 )
 on conflict (slug) do nothing;
+update sensare_products set free_shipping = true where slug = 'ritual-bundle';
 
 -- Seed testimonials
 insert into sensare_testimonials (customer_name, location, quote, rating, is_featured, sort_order) values

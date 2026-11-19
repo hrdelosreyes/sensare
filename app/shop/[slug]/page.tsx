@@ -9,9 +9,8 @@ import { absoluteUrl } from '@/lib/seo'
 import type { Metadata } from 'next'
 
 const PRODUCT_IMAGES: Record<string, string> = {
-  'intimate-indulgence': '/images/product-1.png',
+  'two-hearts': '/images/product-1.png',
   'ritual-bundle': '/images/product-2.png',
-  'lovers-gift-set': '/images/product-3.png',
 }
 
 function productImage(slug: string): string {
@@ -58,7 +57,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
   const { slug } = await params
   const product = await one(db()<{
     id: string; slug: string; name: string; tagline: string | null; description: string
-    price_php: number; compare_at_price_php: number | null; stock_qty: number
+    price_php: number; compare_at_price_php: number | null; stock_qty: number; free_shipping: boolean
   }[]>`select * from sensare_products where slug = ${slug} and is_active`)
 
   if (!product) notFound()
@@ -122,9 +121,10 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
           <h1 style={{ fontFamily: 'PlayfairDisplay', fontWeight: 700, fontSize: 'clamp(28px, 4vw, 44px)', color: 'var(--cream)', marginBottom: 20 }}>{product.name}</h1>
           <p style={{ fontFamily: 'PlayfairDisplay', fontSize: 16, color: 'var(--cream-dim)', lineHeight: 1.9, marginBottom: 28 }}>{product.description}</p>
 
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 32 }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', flexWrap: 'wrap', gap: '4px 12px', marginBottom: 32 }}>
             <span style={{ fontFamily: 'PlayfairDisplay', fontWeight: 700, fontSize: 36, color: 'var(--rose-gold)' }}>₱{product.price_php.toFixed(0)}</span>
             {hasDiscount && <span style={{ fontFamily: 'PlayfairDisplay', fontSize: 18, color: 'var(--text-muted)', textDecoration: 'line-through' }}>₱{Number(product.compare_at_price_php).toFixed(0)}</span>}
+            {product.free_shipping && <span style={{ fontFamily: 'PlayfairDisplay', fontSize: 15, fontWeight: 700, color: 'var(--sage)' }}>Free shipping nationwide</span>}
           </div>
 
           {/* Usage note */}
@@ -137,11 +137,11 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
           {isOutOfStock ? (
             <RestockForm productId={product.id} productName={product.name} />
           ) : (
-            <CheckoutButton productId={product.id} productName={product.name} price={product.price_php} slug={product.slug} />
+            <CheckoutButton productId={product.id} productName={product.name} price={product.price_php} slug={product.slug} freeShipping={product.free_shipping} />
           )}
 
           <p style={{ fontFamily: 'PlayfairDisplay', fontStyle: 'italic', fontSize: 12, color: 'var(--text-muted)', marginTop: 16, textAlign: 'center' }}>
-            Free delivery on orders ₱1,000+. Metro Manila: 1–3 days. Nationwide via LBC.
+            {product.free_shipping ? 'Free shipping nationwide.' : 'Free delivery on orders ₱1,000+.'} Metro Manila: 1–3 days. Nationwide via LBC.
           </p>
 
           {/* Disclaimer */}

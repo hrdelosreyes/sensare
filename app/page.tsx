@@ -191,9 +191,8 @@ export default async function HomePage() {
 }
 
 const productImages: Record<string, string> = {
-  'intimate-indulgence': '/images/product-1.png',
+  'two-hearts': '/images/product-1.png',
   'ritual-bundle': '/images/product-2.png',
-  'lovers-gift-set': '/images/product-3.png',
 }
 
 function ProductCard({ product }: { product: Record<string, unknown> }) {
@@ -223,9 +222,10 @@ function ProductCard({ product }: { product: Record<string, unknown> }) {
         <p style={{ fontFamily: 'PlayfairDisplay', fontSize: 14, color: 'var(--cream-dim)', lineHeight: 1.7, marginBottom: 20, flex: 1 }}>
           {product.description as string}
         </p>
-        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '4px 10px', marginBottom: 16 }}>
           <span style={{ fontFamily: 'PlayfairDisplay', fontWeight: 700, fontSize: 22, color: 'var(--rose-gold)' }}>₱{(product.price_php as number).toFixed(0)}</span>
-          {hasDiscount && <span style={{ fontFamily: 'PlayfairDisplay', fontSize: 14, color: 'var(--text-muted)', textDecoration: 'line-through', marginLeft: 10 }}>₱{(product.compare_at_price_php as number).toFixed(0)}</span>}
+          {hasDiscount && <span style={{ fontFamily: 'PlayfairDisplay', fontSize: 14, color: 'var(--text-muted)', textDecoration: 'line-through' }}>₱{(product.compare_at_price_php as number).toFixed(0)}</span>}
+          {Boolean(product.free_shipping) && <span style={{ fontFamily: 'PlayfairDisplay', fontSize: 13, fontWeight: 700, color: 'var(--sage)' }}>Free shipping nationwide</span>}
         </div>
         {isOutOfStock ? (
           <RestockForm productId={product.id as string} productName={product.name as string} />

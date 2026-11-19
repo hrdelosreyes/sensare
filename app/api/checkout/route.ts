@@ -11,14 +11,14 @@ export async function POST(req: NextRequest) {
     if ('error' in c) return NextResponse.json({ error: c.error }, { status: 400 })
 
     if (typeof productId !== 'string' || !/^[0-9a-f-]{36}$/i.test(productId)) return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
-    const product = await one(db()<{ name: string; price_php: number; stock_qty: number }[]>`
+    const product = await one(db()<{ name: string; price_php: number; stock_qty: number; free_shipping: boolean }[]>`
       select * from sensare_products where id = ${productId} and is_active`)
 
     if (!product) return NextResponse.json({ error: 'Product not found' }, { status: 404 })
     if (product.stock_qty < qty) return NextResponse.json({ error: 'Not enough stock' }, { status: 409 })
 
     const total = product.price_php * qty
-    const shipping = total >= 1000 ? 0 : 100
+    const shipping = product.free_shipping || total >= 1000 ? 0 : 100
     const grandTotal = total + shipping
 
     const refNum = `sns_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
