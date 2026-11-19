@@ -3,7 +3,7 @@
 # Memory
 
 ## Me
-Owner of **Sensarè Chocolates** (aphrodisiac dark chocolate for couples, Philippines) and YANA Enterprises. Target market: **women** (gifting, romance, self-care). Non-developer; works with Claude from the app. Wants plain-language explanations, then a PR opened and merged when asked.
+Owner of **Sensarè Chocolates** (aphrodisiac dark chocolate for couples, Philippines) and YANA Enterprises. Target market: **women as buyers** of a chocolate shared with their husband/partner (couples product, not self-care). Non-developer; works with Claude from the app. Wants plain-language explanations, then a PR opened and merged when asked.
 
 ## Terms
 | Term | Meaning |

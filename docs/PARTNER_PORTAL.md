@@ -171,6 +171,9 @@ All emails use the site's blush/rose design (`lib/email-layout.ts`), come from
   partner's account manager) still get a copy.
 - Customers and partners get their own emails (approvals, order updates,
   payment receipts, reminders, password resets, ritual guide, order confirmation).
+- **Shop checkout** asks for name, mobile, email and delivery address before
+  HitPay. They're saved on the order (shown under Admin → Store → Orders) and
+  used for the buyer's confirmation email once HitPay confirms payment.
 
 ## Security model
 

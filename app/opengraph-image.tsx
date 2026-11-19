@@ -53,7 +53,7 @@ export default async function Image() {
             {SITE_DESCRIPTION}
           </div>
           <div style={{ display: 'flex', alignItems: 'center', marginTop: 34, fontSize: 20, letterSpacing: 4, textTransform: 'uppercase', color: '#3B2026' }}>
-            <span>Aphrodisiac Dark Chocolate</span>
+            <span>Dark Chocolate for Couples</span>
             <span style={{ width: 8, height: 8, borderRadius: 8, background: '#C9906A', margin: '0 18px', display: 'flex' }} />
             <span>Davao Cacao</span>
           </div>

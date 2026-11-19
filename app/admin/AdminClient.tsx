@@ -71,7 +71,21 @@ export default function AdminClient({ orders, products, restock, subscribers, te
                 {orders.map(o => (
                   <tr key={o.id as string} style={{ borderBottom: '1px solid rgba(164,82,63,0.07)' }}>
                     <td style={{ padding: '14px 12px', color: 'var(--rose-gold)', fontFamily: 'monospace', fontSize: 12 }}>{(o.reference_number as string)?.slice(0, 20)}</td>
-                    <td style={{ padding: '14px 12px', color: 'var(--cream)' }}>{o.customer_name as string}</td>
+                    <td style={{ padding: '14px 12px', color: 'var(--cream)', minWidth: 200 }}>
+                      {o.customer_name as string}
+                      {(() => {
+                        const a = (o.shipping_address ?? {}) as { address?: string; city?: string; province?: string }
+                        const email = o.customer_email as string
+                        return (
+                          <div style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.6, marginTop: 2 }}>
+                            {email && email !== 'pending@sensare.com' && <div>{email}</div>}
+                            {o.customer_phone ? <div>{o.customer_phone as string}</div> : null}
+                            {a.address && <div>{a.address}, {[a.city, a.province].filter(Boolean).join(', ')}</div>}
+                            {o.notes ? <div style={{ fontStyle: 'italic' }}>“{o.notes as string}”</div> : null}
+                          </div>
+                        )
+                      })()}
+                    </td>
                     <td style={{ padding: '14px 12px', color: 'var(--cream)' }}>₱{(o.total_php as number)?.toFixed(0)}</td>
                     <td style={{ padding: '14px 12px' }}>
                       <span style={{ padding: '3px 10px', borderRadius: 2, fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', background: o.payment_status === 'paid' ? 'var(--sage-tint)' : 'var(--danger-tint)', color: o.payment_status === 'paid' ? 'var(--sage)' : 'var(--danger)' }}>
