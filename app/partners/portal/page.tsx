@@ -55,7 +55,7 @@ export default async function PortalDashboard({ searchParams }: { searchParams: 
 
       {reset && <div className="pp-alert pp-alert-ok" style={{ marginBottom: 0 }}>Your password has been updated.</div>}
       {sugCases > 0 && (
-        <div className="pp-card" style={{ borderColor: 'rgba(201,144,106,0.55)' }}>
+        <div className="pp-card" style={{ borderColor: 'rgba(164,82,63,0.55)' }}>
           <div className="pp-row" style={{ justifyContent: 'space-between' }}>
             <div>
               <p className="pp-h2" style={{ marginBottom: 4 }}>Your suggested reorder is ready</p>

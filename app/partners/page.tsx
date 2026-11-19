@@ -28,7 +28,7 @@ export default async function PartnersPage() {
 
   return (
     <div style={{ paddingTop: 72 }}>
-      <section style={{ position: 'relative', minHeight: 460, display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
+      <section className="on-dark" style={{ background: 'var(--band)', position: 'relative', minHeight: 460, display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
         <Image src="/images/box.png" alt="" fill style={{ objectFit: 'cover', opacity: 0.25 }} priority />
         <div style={{ position: 'relative', maxWidth: 1200, margin: '0 auto', padding: '72px 24px', width: '100%' }}>
           <p style={{ fontFamily: 'Allura', fontSize: 36, color: 'var(--rose-gold)', marginBottom: 8 }}>Partner Program</p>
@@ -63,7 +63,7 @@ export default async function PartnersPage() {
         </div>
       </section>
 
-      <section style={{ background: 'var(--chocolate)', borderTop: '1px solid rgba(201,144,106,0.1)', borderBottom: '1px solid rgba(201,144,106,0.1)' }}>
+      <section style={{ background: 'var(--chocolate)', borderTop: '1px solid rgba(164,82,63,0.1)', borderBottom: '1px solid rgba(164,82,63,0.1)' }}>
         <div style={{ maxWidth: 1000, margin: '0 auto', padding: '64px 24px' }}>
           <h2 className="pp-h2" style={{ fontSize: 28, textAlign: 'center', marginBottom: 36 }}>How it works</h2>
           <div className="pp-grid">

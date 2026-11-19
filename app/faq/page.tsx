@@ -62,7 +62,7 @@ export default function FAQPage() {
   return (
     <div style={{ paddingTop: 72 }}>
       <JsonLd data={faqJsonLd} />
-      <section style={{ padding: '80px 24px 48px', textAlign: 'center', borderBottom: '1px solid rgba(201,144,106,0.1)' }}>
+      <section style={{ padding: '80px 24px 48px', textAlign: 'center', borderBottom: '1px solid rgba(164,82,63,0.1)' }}>
         <p style={{ fontFamily: 'Allura', fontSize: 32, color: 'var(--rose-gold)', marginBottom: 8 }}>Questions?</p>
         <h1 style={{ fontFamily: 'PlayfairDisplay', fontWeight: 700, fontSize: 'clamp(28px, 4vw, 48px)', color: 'var(--cream)', marginBottom: 16 }}>We've Got Answers</h1>
         <p style={{ fontFamily: 'PlayfairDisplay', fontSize: 16, color: 'var(--cream-dim)' }}>Can't find what you need? <a href="/contact" style={{ color: 'var(--rose-gold)' }}>Contact us</a>.</p>
@@ -71,11 +71,11 @@ export default function FAQPage() {
       <div style={{ maxWidth: 800, margin: '0 auto', padding: '64px 24px' }}>
         {faqs.map(section => (
           <div key={section.category} style={{ marginBottom: 56 }}>
-            <h2 style={{ fontFamily: 'PlayfairDisplay', fontWeight: 700, fontSize: 13, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--rose-gold)', marginBottom: 24, paddingBottom: 12, borderBottom: '1px solid rgba(201,144,106,0.2)' }}>
+            <h2 style={{ fontFamily: 'PlayfairDisplay', fontWeight: 700, fontSize: 13, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--rose-gold)', marginBottom: 24, paddingBottom: 12, borderBottom: '1px solid rgba(164,82,63,0.2)' }}>
               {section.category}
             </h2>
             {section.items.map((item, i) => (
-              <div key={i} style={{ borderBottom: '1px solid rgba(201,144,106,0.08)', padding: '24px 0' }}>
+              <div key={i} style={{ borderBottom: '1px solid rgba(164,82,63,0.08)', padding: '24px 0' }}>
                 <p style={{ fontFamily: 'PlayfairDisplay', fontWeight: 700, fontSize: 17, color: 'var(--cream)', marginBottom: 10 }}>{item.q}</p>
                 <p style={{ fontFamily: 'PlayfairDisplay', fontSize: 15, color: 'var(--cream-dim)', lineHeight: 1.8 }}>{item.a}</p>
               </div>

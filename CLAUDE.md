@@ -3,7 +3,7 @@
 # Memory
 
 ## Me
-Owner of **Sensarè Chocolates** (aphrodisiac dark chocolate for couples, Philippines) and YANA Enterprises. Non-developer; works with Claude from the app. Wants plain-language explanations, then a PR opened and merged when asked.
+Owner of **Sensarè Chocolates** (aphrodisiac dark chocolate for couples, Philippines) and YANA Enterprises. Target market: **women** (gifting, romance, self-care). Non-developer; works with Claude from the app. Wants plain-language explanations, then a PR opened and merged when asked.
 
 ## Terms
 | Term | Meaning |
@@ -31,6 +31,8 @@ Next.js 16 (read node_modules/next/dist/docs first — `proxy.ts` not middleware
 → Details: memory/context/company.md
 
 ## Preferences & conventions
+- Brand wordmark font: **Oleo Script** ("Sensarè" only); Allura for script accents; Playfair Display for headings/text
+- Colour palette (applied 2026-11-19, tokens in app/globals.css; `.on-dark` for dark bands): soft blush base, analogous rose-gold/rose/berry + split-complementary sage; dark only for hero/footer → memory/context/brand.md
 - Contact email everywhere: **mysensare@gmail.com** (sender stays noreply@mysensare.com, Reply-To Gmail)
 - Must be mobile-friendly (check at iPhone width)
 - Ask before merging/deploying; when asked: open PR → merge

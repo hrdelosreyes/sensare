@@ -20,7 +20,7 @@ export default function Footer() {
   }
 
   return (
-    <footer style={{ background: 'var(--chocolate)', borderTop: '1px solid rgba(201,144,106,0.15)' }}>
+    <footer className="on-dark" style={{ background: 'var(--chocolate)', borderTop: '1px solid rgba(201,144,106,0.15)' }}>
       {/* Newsletter band */}
       <div style={{
         background: 'var(--mocha)', padding: '56px 24px', textAlign: 'center',

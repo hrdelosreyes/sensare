@@ -34,7 +34,7 @@ export default function CheckoutButton({ productId, productName, price, slug }: 
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16 }}>
-        <div style={{ display: 'flex', alignItems: 'center', border: '1px solid rgba(201,144,106,0.3)', borderRadius: 2 }}>
+        <div style={{ display: 'flex', alignItems: 'center', border: '1px solid rgba(164,82,63,0.3)', borderRadius: 2 }}>
           <button onClick={() => setQty(q => Math.max(1, q - 1))} style={{ width: 40, height: 44, background: 'none', border: 'none', color: 'var(--rose-gold)', fontSize: 20, cursor: 'pointer' }}>−</button>
           <span style={{ width: 40, textAlign: 'center', fontFamily: 'PlayfairDisplay', fontSize: 16, color: 'var(--cream)' }}>{qty}</span>
           <button onClick={() => setQty(q => q + 1)} style={{ width: 40, height: 44, background: 'none', border: 'none', color: 'var(--rose-gold)', fontSize: 20, cursor: 'pointer' }}>+</button>
@@ -53,7 +53,7 @@ export default function CheckoutButton({ productId, productName, price, slug }: 
         {loading ? 'Redirecting…' : `Order Now · ₱${(price * qty).toFixed(0)}`}
       </button>
 
-      {error && <p style={{ fontFamily: 'PlayfairDisplay', fontSize: 13, color: '#e07070', marginTop: 10 }}>{error}</p>}
+      {error && <p style={{ fontFamily: 'PlayfairDisplay', fontSize: 13, color: 'var(--danger)', marginTop: 10 }}>{error}</p>}
     </div>
   )
 }

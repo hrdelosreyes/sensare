@@ -16,7 +16,7 @@ export function StatusForm({ partner }: { partner: Partner }) {
   const [state, action] = useActionState(setPartnerStatusAction, undefined)
   const s = partner.status
   return (
-    <ActionForm action={action} className="pp-card" style={{ borderColor: s === 'pending' ? 'rgba(230,180,80,0.4)' : undefined }}>
+    <ActionForm action={action} className="pp-card" style={{ borderColor: s === 'pending' ? 'rgba(122,82,0,0.35)' : undefined }}>
       <input type="hidden" name="partner_id" value={partner.id} />
       <FormMessage state={state} />
       <p className="pp-h2">{s === 'pending' ? 'Review application' : 'Access'}</p>

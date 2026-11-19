@@ -21,14 +21,14 @@ export default async function OrderConfirmPage({ searchParams }: { searchParams:
             Order reference: <span style={{ color: 'var(--rose-gold)' }}>{ref}</span>
           </p>
         )}
-        <div style={{ background: 'var(--mocha)', border: '1px solid rgba(201,144,106,0.2)', borderRadius: 4, padding: '28px 32px', marginBottom: 36, textAlign: 'left' }}>
+        <div style={{ background: 'var(--mocha)', border: '1px solid rgba(164,82,63,0.2)', borderRadius: 4, padding: '28px 32px', marginBottom: 36, textAlign: 'left' }}>
           <p style={{ fontFamily: 'PlayfairDisplay', fontWeight: 700, fontSize: 15, color: 'var(--rose-gold)', marginBottom: 12 }}>While you wait...</p>
           <p style={{ fontFamily: 'PlayfairDisplay', fontStyle: 'italic', fontSize: 15, color: 'var(--cream-dim)', lineHeight: 1.8 }}>
             Set the scene. Choose the music. Light the candle. Your Sensarè is coming — the ritual begins with the intention.
           </p>
         </div>
         <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
-          <Link href="/pages/the-sensare-ritual" style={{ padding: '14px 28px', border: '1px solid rgba(201,144,106,0.4)', color: 'var(--rose-gold-light)', fontFamily: 'PlayfairDisplay', fontSize: 13, letterSpacing: 2, textTransform: 'uppercase', textDecoration: 'none', borderRadius: 2 }}>
+          <Link href="/pages/the-sensare-ritual" style={{ padding: '14px 28px', border: '1px solid rgba(164,82,63,0.4)', color: 'var(--rose-gold-light)', fontFamily: 'PlayfairDisplay', fontSize: 13, letterSpacing: 2, textTransform: 'uppercase', textDecoration: 'none', borderRadius: 2 }}>
             Read the Ritual Guide
           </Link>
           <Link href="/shop" style={{ padding: '14px 28px', background: 'var(--rose-gold)', color: 'var(--espresso)', fontFamily: 'PlayfairDisplay', fontWeight: 700, fontSize: 13, letterSpacing: 2, textTransform: 'uppercase', textDecoration: 'none', borderRadius: 2 }}>

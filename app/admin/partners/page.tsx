@@ -117,7 +117,7 @@ export default async function AdminPartnersPage({ searchParams }: { searchParams
                     <td className="pp-num">{p.open_orders || '—'}</td>
                     {showMoney && <>
                       <td className="pp-num">{p.balance ? peso(p.balance, 0) : '—'}</td>
-                      <td className="pp-num" style={{ color: p.overdue > 0 ? '#e09a9a' : undefined }}>{p.overdue ? peso(p.overdue, 0) : '—'}</td>
+                      <td className="pp-num" style={{ color: p.overdue > 0 ? 'var(--danger)' : undefined }}>{p.overdue ? peso(p.overdue, 0) : '—'}</td>
                     </>}
                     <td>{fmtDate(p.last_sale)}</td>
                     <td>{PAYMENT_TERMS[p.default_payment_terms]}</td>

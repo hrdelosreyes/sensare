@@ -101,13 +101,13 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
       {/* Product hero */}
       <div style={{ maxWidth: 1100, margin: '0 auto', padding: '64px 24px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 64, alignItems: 'start' }}>
         {/* Image */}
-        <div style={{ borderRadius: 4, overflow: 'hidden', position: 'relative', minHeight: 420, border: '1px solid rgba(201,144,106,0.15)' }}>
+        <div style={{ borderRadius: 4, overflow: 'hidden', position: 'relative', minHeight: 420, border: '1px solid rgba(164,82,63,0.15)' }}>
           <Image
             src={productImage(product.slug)}
             alt={product.name} fill style={{ objectFit: 'cover', objectPosition: 'center' }}
           />
           {isOutOfStock && (
-            <div style={{ position: 'absolute', top: 20, left: 20, background: 'rgba(15,7,5,0.9)', padding: '6px 16px', fontFamily: 'PlayfairDisplay', fontSize: 12, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--text-muted)' }}>Sold Out</div>
+            <div style={{ position: 'absolute', top: 20, left: 20, background: 'rgba(252,245,242,0.92)', padding: '6px 16px', fontFamily: 'PlayfairDisplay', fontSize: 12, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--fg-soft)' }}>Sold Out</div>
           )}
         </div>
 
@@ -123,7 +123,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
           </div>
 
           {/* Usage note */}
-          <div style={{ background: 'var(--mocha)', border: '1px solid rgba(201,144,106,0.2)', borderRadius: 4, padding: '16px 20px', marginBottom: 28 }}>
+          <div style={{ background: 'var(--mocha)', border: '1px solid rgba(164,82,63,0.2)', borderRadius: 4, padding: '16px 20px', marginBottom: 28 }}>
             <p style={{ fontFamily: 'PlayfairDisplay', fontStyle: 'italic', fontSize: 14, color: 'var(--cream-dim)', lineHeight: 1.7 }}>
               Best shared <strong style={{ color: 'var(--rose-gold)', fontStyle: 'normal' }}>30 minutes to 1 hour</strong> before your moment together. One piece per partner.
             </p>
@@ -140,21 +140,21 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
           </p>
 
           {/* Disclaimer */}
-          <p style={{ fontFamily: 'PlayfairDisplay', fontSize: 11, color: 'var(--text-muted)', marginTop: 12, lineHeight: 1.7, padding: '12px 0', borderTop: '1px solid rgba(201,144,106,0.1)' }}>
+          <p style={{ fontFamily: 'PlayfairDisplay', fontSize: 11, color: 'var(--text-muted)', marginTop: 12, lineHeight: 1.7, padding: '12px 0', borderTop: '1px solid rgba(164,82,63,0.1)' }}>
             ⚠ Not intended to diagnose, treat, cure, or prevent any condition. Not recommended during pregnancy or breastfeeding. Consult your healthcare provider if you have concerns.
           </p>
         </div>
       </div>
 
       {/* Botanicals */}
-      <section style={{ background: 'var(--chocolate)', padding: '72px 24px', borderTop: '1px solid rgba(201,144,106,0.1)' }}>
+      <section style={{ background: 'var(--chocolate)', padding: '72px 24px', borderTop: '1px solid rgba(164,82,63,0.1)' }}>
         <div style={{ maxWidth: 800, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 48 }}>
             <p style={{ fontFamily: 'Allura', fontSize: 30, color: 'var(--rose-gold)', marginBottom: 8 }}>What's Inside</p>
             <h2 style={{ fontFamily: 'PlayfairDisplay', fontWeight: 700, fontSize: 28, color: 'var(--cream)' }}>Ingredients & Botanicals</h2>
           </div>
           {botanicals.map((b, i) => (
-            <div key={i} style={{ display: 'flex', gap: 20, padding: '20px 0', borderBottom: '1px solid rgba(201,144,106,0.08)', alignItems: 'flex-start' }}>
+            <div key={i} style={{ display: 'flex', gap: 20, padding: '20px 0', borderBottom: '1px solid rgba(164,82,63,0.08)', alignItems: 'flex-start' }}>
               <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--rose-gold)', marginTop: 7, flexShrink: 0 }} />
               <div>
                 <p style={{ fontFamily: 'PlayfairDisplay', fontWeight: 700, fontSize: 16, color: 'var(--cream)', marginBottom: 4 }}>{b.name}</p>
@@ -172,7 +172,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
           <h2 style={{ fontFamily: 'PlayfairDisplay', fontWeight: 700, fontSize: 28, color: 'var(--cream)' }}>We've Got Answers</h2>
         </div>
         {faqs.map((f, i) => (
-          <div key={i} style={{ borderBottom: '1px solid rgba(201,144,106,0.1)', padding: '24px 0' }}>
+          <div key={i} style={{ borderBottom: '1px solid rgba(164,82,63,0.1)', padding: '24px 0' }}>
             <p style={{ fontFamily: 'PlayfairDisplay', fontWeight: 700, fontSize: 17, color: 'var(--rose-gold)', marginBottom: 10 }}>{f.q}</p>
             <p style={{ fontFamily: 'PlayfairDisplay', fontSize: 15, color: 'var(--cream-dim)', lineHeight: 1.8 }}>{f.a}</p>
           </div>

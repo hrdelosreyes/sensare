@@ -20,7 +20,7 @@ export default function SettlePanel({ to, amount, bankDetails, today }: { to: st
   }
 
   return (
-    <div className="no-print" style={{ marginTop: 20, borderTop: '1px solid rgba(201,144,106,0.15)', paddingTop: 20 }}>
+    <div className="no-print" style={{ marginTop: 20, borderTop: '1px solid rgba(164,82,63,0.15)', paddingTop: 20 }}>
       <p className="pp-h3">Pay {peso(amount)}</p>
       <div className="pp-row" style={{ marginBottom: 16 }}>
         <button type="button" className={`pp-btn pp-btn-sm ${tab === 'online' ? '' : 'pp-btn-ghost'}`} onClick={() => setTab('online')}>Pay online</button>
