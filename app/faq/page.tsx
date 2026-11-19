@@ -38,7 +38,7 @@ const faqs = [
     category: 'Orders & Shipping',
     items: [
       { q: 'Where do you ship?', a: 'Nationwide across the Philippines. Metro Manila orders arrive in 1–3 business days. Provincial orders via LBC, 3–7 business days.' },
-      { q: 'Is there free shipping?', a: 'Yes — The Ritual Bundle always ships free nationwide, and every order of ₱1,000 and above ships free.' },
+      { q: 'Is there free shipping?', a: 'Yes — The Ritual Bundle always ships free nationwide, and every order of ₱1,000 and above ships free. Otherwise shipping is ₱100 within Metro Manila and ₱150 to other provinces.' },
       { q: 'How is it packaged?', a: 'Sensarè is packaged in a premium gift-ready box. It arrives looking exactly as it should for a gift.' },
       { q: 'Can I track my order?', a: 'Yes. You\'ll receive a tracking link by email once your order is dispatched.' },
       { q: 'What is your return policy?', a: 'Due to the perishable nature of our product, we do not accept returns. If your order arrives damaged or incorrect, contact us within 24 hours and we\'ll make it right.' },

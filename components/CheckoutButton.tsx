@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { track, canTrack } from '@/lib/pixel'
+import { PROVINCES, isProvince, shippingFee, FEE_METRO_MANILA, FEE_PROVINCIAL, FREE_SHIPPING_FROM } from '@/lib/shipping'
 
 interface Props {
   productId: string
@@ -34,13 +35,17 @@ export default function CheckoutButton({ productId, productName, price, freeShip
   useEffect(() => {
     try {
       const saved = localStorage.getItem(SAVED_KEY)
-      if (saved) setD({ ...EMPTY, ...JSON.parse(saved), notes: '' })
+      if (saved) {
+        const s = { ...EMPTY, ...JSON.parse(saved), notes: '' }
+        setD({ ...s, province: isProvince(s.province) ? s.province : '' })
+      }
     } catch {}
   }, [])
 
-  const set = (k: keyof Details) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setD(v => ({ ...v, [k]: e.target.value }))
+  const set = (k: keyof Details) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => setD(v => ({ ...v, [k]: e.target.value }))
   const subtotal = price * qty
-  const shipping = freeShipping || subtotal >= 1000 ? 0 : 100
+  const shipping = shippingFee({ subtotal, province: d.province, freeShipping })
+  const shippingKnown = shipping === 0 || Boolean(d.province)
   const pixelProduct = (value: number) => ({
     content_ids: [productId], content_name: productName, content_type: 'product',
     contents: [{ id: productId, quantity: qty, item_price: price }], num_items: qty, value, currency: 'PHP',
@@ -113,14 +118,28 @@ export default function CheckoutButton({ productId, productName, price, freeShip
           <label style={{ display: 'block', marginTop: 14 }}><span style={label}>Delivery address</span><input style={input} name="address" required maxLength={300} autoComplete="street-address" placeholder="House no., street, barangay" value={d.address} onChange={set('address')} /></label>
           <div style={{ display: 'grid', gap: 14, marginTop: 14, gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 180px), 1fr))' }}>
             <label><span style={label}>City / Municipality</span><input style={input} name="city" required maxLength={100} autoComplete="address-level2" value={d.city} onChange={set('city')} /></label>
-            <label><span style={label}>Province</span><input style={input} name="province" required maxLength={100} autoComplete="address-level1" value={d.province} onChange={set('province')} /></label>
+            <label><span style={label}>Province</span>
+              <select style={input} name="province" required autoComplete="address-level1" value={d.province} onChange={set('province')}>
+                <option value="" disabled>Choose…</option>
+                {PROVINCES.map(p => <option key={p} value={p}>{p}</option>)}
+              </select>
+            </label>
           </div>
           <label style={{ display: 'block', marginTop: 14 }}><span style={label}>Notes (optional)</span><textarea style={{ ...input, minHeight: 70, resize: 'vertical' }} name="notes" maxLength={500} placeholder="Gift message, landmark, delivery time…" value={d.notes} onChange={set('notes')} /></label>
 
           <div style={{ fontFamily: 'PlayfairDisplay', fontSize: 14, color: 'var(--cream-dim)', margin: '18px 0 14px', lineHeight: 1.8 }}>
-            Subtotal ₱{subtotal.toFixed(0)} · Shipping {shipping ? `₱${shipping}` : freeShipping ? 'free nationwide' : 'free'}<br />
-            <strong style={{ color: 'var(--cream)' }}>Total ₱{(subtotal + shipping).toFixed(0)}</strong>
-            {shipping > 0 && <span style={{ color: 'var(--text-muted)', fontSize: 12 }}> · free shipping from ₱1,000</span>}
+            {shippingKnown ? (
+              <>
+                Subtotal ₱{subtotal.toFixed(0)} · Shipping {shipping ? `₱${shipping}` : freeShipping ? 'free nationwide' : 'free'}<br />
+                <strong style={{ color: 'var(--cream)' }}>Total ₱{(subtotal + shipping).toFixed(0)}</strong>
+                {shipping > 0 && <span style={{ color: 'var(--text-muted)', fontSize: 12 }}> · free shipping from ₱{FREE_SHIPPING_FROM.toLocaleString()}</span>}
+              </>
+            ) : (
+              <>
+                Subtotal ₱{subtotal.toFixed(0)}<br />
+                <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>Shipping ₱{FEE_METRO_MANILA} in Metro Manila, ₱{FEE_PROVINCIAL} elsewhere · choose your province above</span>
+              </>
+            )}
           </div>
           <button type="submit" disabled={loading} style={button}>
             {loading ? 'Redirecting to payment…' : 'Continue to Payment'}

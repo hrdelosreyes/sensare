@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse, after } from 'next/server'
 import { db, one } from '@/lib/db'
+import { shippingFee, isProvince } from '@/lib/shipping'
 import { adContextFrom, sendMetaEvent, orderCustomData } from '@/lib/meta'
 
 export async function POST(req: NextRequest) {
@@ -18,7 +19,7 @@ export async function POST(req: NextRequest) {
     if (product.stock_qty < qty) return NextResponse.json({ error: 'Not enough stock' }, { status: 409 })
 
     const total = product.price_php * qty
-    const shipping = product.free_shipping || total >= 1000 ? 0 : 100
+    const shipping = shippingFee({ subtotal: total, province: c.province, freeShipping: product.free_shipping })
     const grandTotal = total + shipping
 
     const refNum = `sns_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
@@ -103,6 +104,7 @@ function cleanCustomer(raw: unknown): Customer | { error: string } {
     notes: String(r.notes ?? '').trim().slice(0, 500),
   }
   if (!c.name || !c.address || !c.city || !c.province) return { error: 'Please fill in your name and delivery address.' }
+  if (!isProvince(c.province)) return { error: 'Please choose your province from the list.' }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(c.email)) return { error: 'Please enter a valid email address.' }
   if (c.phone.replace(/\D/g, '').length < 10) return { error: 'Please enter a valid mobile number.' }
   return c
