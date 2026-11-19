@@ -7,7 +7,7 @@ import RestockForm from '@/components/RestockForm'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Dark Chocolate for Couples',
+  title: { absolute: 'Dark Chocolate for Couples | Sensarè Chocolates' },
   description: 'Sensarè crafts artisanal Davao dark chocolate infused with ancient botanicals — made for couples to awaken desire, elevate intimacy, and deepen connection.',
   alternates: { canonical: '/' },
 }
