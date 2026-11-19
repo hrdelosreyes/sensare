@@ -40,14 +40,14 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 const botanicals = [
   { name: 'Davao Dark Chocolate (60%)', role: 'Rich base, antioxidant-rich, complex flavour' },
-  { name: 'Damiana Leaf', role: 'Traditional Mexican herb historically used to support mood and sensual energy' },
+  { name: 'Damiana Leaf', role: 'Traditional Mexican herb historically used to support mood and balance' },
   { name: 'Maca Root', role: 'Andean adaptogen used for centuries to support vitality and stamina' },
-  { name: 'Ashwagandha', role: 'Ayurvedic adaptogen that promotes calm, reduces stress, supports arousal' },
+  { name: 'Ashwagandha', role: 'Ayurvedic adaptogen that promotes calm and reduces stress' },
   { name: 'Ceylon Cinnamon', role: 'Warming spice that enhances circulation and adds a gentle heat' },
 ]
 
 const faqs = [
-  { q: 'When should I take it?', a: 'Share it 30 minutes to 1 hour before your intended intimate moment for best effect.' },
+  { q: 'When should I take it?', a: 'Share it 30 minutes to 1 hour before your time together for best effect.' },
   { q: 'How many pieces per person?', a: 'One heart-shaped piece per partner per session is the recommended dose.' },
   { q: 'Is this safe to take regularly?', a: 'Yes — all botanicals are natural and traditionally used for vitality. Not recommended during pregnancy or breastfeeding.' },
   { q: 'Is this vegan?', a: 'Yes. No dairy, no animal products.' },
@@ -130,7 +130,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
           {/* Usage note */}
           <div style={{ background: 'var(--mocha)', border: '1px solid rgba(164,82,63,0.2)', borderRadius: 4, padding: '16px 20px', marginBottom: 28 }}>
             <p style={{ fontFamily: 'PlayfairDisplay', fontStyle: 'italic', fontSize: 14, color: 'var(--cream-dim)', lineHeight: 1.7 }}>
-              Best shared <strong style={{ color: 'var(--rose-gold)', fontStyle: 'normal' }}>30 minutes to 1 hour</strong> before your moment together. One piece per partner.
+              Best shared <strong style={{ color: 'var(--rose-gold)', fontStyle: 'normal' }}>30 minutes to 1 hour</strong> before your evening together. One piece per partner.
             </p>
           </div>
 

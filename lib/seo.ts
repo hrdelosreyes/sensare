@@ -3,7 +3,7 @@
 export const SITE_URL = (process.env.NEXT_PUBLIC_APP_URL || 'https://mysensare.com').replace(/\/$/, '')
 export const SITE_NAME = 'Sensarè Chocolates'
 export const SITE_DESCRIPTION =
-  'Artisanal dark chocolate infused with ancient botanicals — crafted for couples to awaken desire, elevate intimacy, and deepen connection.'
+  'Artisanal dark chocolate infused with ancient botanicals — crafted for couples to slow down, elevate presence, and deepen connection.'
 
 export function absoluteUrl(path = ''): string {
   return `${SITE_URL}${path.startsWith('/') ? path : `/${path}`}`

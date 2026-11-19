@@ -11,7 +11,7 @@ const faqs = [
   {
     category: 'Usage',
     items: [
-      { q: 'How do we enjoy Sensarè?', a: 'Share it as a ritual — 30 minutes to 1 hour before intimacy. Follow the 5-step Sensarè Ritual for the full experience.' },
+      { q: 'How do we enjoy Sensarè?', a: 'Share it as a ritual — 30 minutes to 1 hour before your time together. Follow the 5-step Sensarè Ritual for the full experience.' },
       { q: 'How many pieces per person?', a: 'One heart-shaped piece per partner, per session. That\'s one full box shared between two people.' },
       { q: 'When will we feel the effects?', a: 'Most couples notice a shift in mood and relaxation within 30–45 minutes. The botanicals work gradually — they\'re not stimulants.' },
     ],
@@ -20,7 +20,7 @@ const faqs = [
     category: 'Ingredients & Safety',
     items: [
       { q: 'What botanicals are in Sensarè?', a: 'Each piece contains 60% Davao dark chocolate, damiana leaf, maca root, ashwagandha, and ceylon cinnamon — all natural, traditionally used herbs.' },
-      { q: 'Is this safe to take regularly?', a: 'Yes. Sensarè is crafted with natural botanicals traditionally used to support vitality, balance, and sensual energy. We recommend one box per session.' },
+      { q: 'Is this safe to take regularly?', a: 'Yes. Sensarè is crafted with natural botanicals traditionally used to support vitality, balance, and overall wellbeing. We recommend one box per session.' },
       { q: 'Is this safe during pregnancy or breastfeeding?', a: 'No. We advise against it. Some botanicals (damiana, maca) are not recommended during pregnancy or lactation. Consult your healthcare provider.' },
       { q: 'Is this vegan?', a: 'Yes. Sensarè contains no dairy, no animal products, and is sweetened naturally.' },
       { q: 'Is this FDA-approved?', a: 'Sensarè is a food product made with natural ingredients — not a medicine or supplement. It is not intended to diagnose, treat, cure, or prevent any condition.' },

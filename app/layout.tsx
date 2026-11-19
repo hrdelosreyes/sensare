@@ -9,7 +9,7 @@ import { SITE_URL, SITE_NAME, SITE_DESCRIPTION, organizationJsonLd } from '@/lib
 export const metadata: Metadata = {
   title: { default: SITE_NAME, template: `%s | ${SITE_NAME}` },
   description: SITE_DESCRIPTION,
-  keywords: ['aphrodisiac chocolate', 'couples chocolate', 'Davao chocolate', 'intimate gift', 'dark chocolate Philippines'],
+  keywords: ['dark chocolate for couples', 'couples chocolate', 'Davao chocolate', 'gift for couples', 'dark chocolate Philippines'],
   metadataBase: new URL(SITE_URL),
   openGraph: {
     siteName: SITE_NAME,

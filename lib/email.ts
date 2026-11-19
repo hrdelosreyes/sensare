@@ -184,7 +184,7 @@ export const email = {
         '<strong style="color:#A4523F;">01 · Set the Scene</strong> — Dim the lights, light a candle, phones away.<br>' +
         '<strong style="color:#A4523F;">02 · Unwrap with Intention</strong> — Slow down. Breathe. Eye contact.<br>' +
         '<strong style="color:#A4523F;">03 · Savor Slowly</strong> — Small bites. Let it melt. Describe the taste.<br>' +
-        '<strong style="color:#A4523F;">04 · Touch, Speak, Connect</strong> — “What do you feel? What do you desire?”<br>' +
+        '<strong style="color:#A4523F;">04 · Touch, Speak, Connect</strong> — “What do you feel? What do you need tonight?”<br>' +
         '<strong style="color:#A4523F;">05 · Ignite</strong> — Let the evening unfold.')}`,
       cta: { label: 'Shop the Collection', href: `${SITE_URL}/shop` },
       signoff: 'Unwrap. Savor. Ignite. ♥',
