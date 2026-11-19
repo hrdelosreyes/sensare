@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getAdmin } from '@/lib/auth'
 import { can } from '@/lib/roles'
+import { refreshShopPages } from '@/lib/shop-cache'
 
 export async function POST(req: NextRequest) {
   const admin = await getAdmin()
@@ -17,5 +18,6 @@ export async function POST(req: NextRequest) {
     console.error('Stock update failed', e)
     return NextResponse.json({ error: 'Could not update stock' }, { status: 500 })
   }
+  refreshShopPages()
   return NextResponse.json({ ok: true })
 }

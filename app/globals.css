@@ -2,44 +2,44 @@
 
 @font-face {
   font-family: 'OleoScript';
-  src: url('/fonts/OleoScript-Regular.ttf') format('truetype');
+  src: url('/fonts/OleoScript-Regular.woff2') format('woff2');
   font-weight: 400;
   font-display: swap;
 }
 @font-face {
   font-family: 'OleoScript';
-  src: url('/fonts/OleoScript-Bold.ttf') format('truetype');
+  src: url('/fonts/OleoScript-Bold.woff2') format('woff2');
   font-weight: 700;
   font-display: swap;
 }
 @font-face {
   font-family: 'Allura';
-  src: url('/fonts/Allura-Regular.ttf') format('truetype');
+  src: url('/fonts/Allura-Regular.woff2') format('woff2');
   font-weight: 400;
   font-display: swap;
 }
 @font-face {
   font-family: 'PlayfairDisplay';
-  src: url('/fonts/PlayfairDisplay-Regular.ttf') format('truetype');
+  src: url('/fonts/PlayfairDisplay-Regular.woff2') format('woff2');
   font-weight: 400;
   font-display: swap;
 }
 @font-face {
   font-family: 'PlayfairDisplay';
-  src: url('/fonts/PlayfairDisplay-Italic.ttf') format('truetype');
+  src: url('/fonts/PlayfairDisplay-Italic.woff2') format('woff2');
   font-weight: 400;
   font-style: italic;
   font-display: swap;
 }
 @font-face {
   font-family: 'PlayfairDisplay';
-  src: url('/fonts/PlayfairDisplay-Bold.ttf') format('truetype');
+  src: url('/fonts/PlayfairDisplay-Bold.woff2') format('woff2');
   font-weight: 700;
   font-display: swap;
 }
 @font-face {
   font-family: 'PlayfairDisplay';
-  src: url('/fonts/PlayfairDisplay-BoldItalic.ttf') format('truetype');
+  src: url('/fonts/PlayfairDisplay-BoldItalic.woff2') format('woff2');
   font-weight: 700;
   font-style: italic;
   font-display: swap;

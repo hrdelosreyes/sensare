@@ -29,7 +29,7 @@ export default async function PartnersPage() {
   return (
     <div style={{ paddingTop: 72 }}>
       <section className="on-dark" style={{ background: 'var(--band)', position: 'relative', minHeight: 460, display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
-        <Image src="/images/box.png" alt="" fill style={{ objectFit: 'cover', opacity: 0.25 }} priority />
+        <Image src="/images/box.jpg" alt="" fill sizes="100vw" style={{ objectFit: 'cover', opacity: 0.25 }} preload />
         <div style={{ position: 'relative', maxWidth: 1200, margin: '0 auto', padding: '72px 24px', width: '100%' }}>
           <p style={{ fontFamily: 'Allura', fontSize: 36, color: 'var(--rose-gold)', marginBottom: 8 }}>Partner Program</p>
           <h1 style={{ fontFamily: 'PlayfairDisplay', fontWeight: 700, fontSize: 'clamp(32px, 5vw, 56px)', color: 'var(--cream)', maxWidth: 680, lineHeight: 1.15, marginBottom: 20 }}>
