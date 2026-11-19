@@ -24,7 +24,6 @@ export const metadata: Metadata = {
     title: SITE_NAME,
     description: SITE_DESCRIPTION,
   },
-  icons: { icon: '/logo-sensare.png' },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
