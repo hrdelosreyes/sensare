@@ -53,15 +53,20 @@ export type Report = {
 const sellThrough = (sold: number, opening: number, received: number) =>
   opening + received > 0 ? sold / (opening + received) : null
 
-export async function buildReport(partnerId: string | null, range: ReportRange, locationId: string | null = null): Promise<Report> {
+/**
+ * partnerId: one partner's report. Otherwise all partners, or only `scopeIds`
+ * when given (an account manager's accounts).
+ */
+export async function buildReport(partnerId: string | null, range: ReportRange, locationId: string | null = null, scopeIds: string[] | null = null): Promise<Report> {
   const sql = db()
-  const pf = partnerId ? sql`and o.partner_id = ${partnerId}` : sql``
+  const ids: string[] | null = partnerId ? [partnerId] : scopeIds
+  const pf = ids ? sql`and o.partner_id = any(${ids}::uuid[])` : sql``
   const lf = locationId ? sql`and o.location_id = ${locationId}` : sql``
   const [flow, daily, products, partners, orders, open] = await Promise.all([
-    sql`select * from sensare_partner_report(${partnerId}::uuid, ${locationId}::uuid, ${range.from}::date, ${range.to}::date)`,
-    sql`select * from sensare_partner_report_daily(${partnerId}::uuid, ${locationId}::uuid, ${range.from}::date, ${range.to}::date)`,
+    sql`select * from sensare_partner_report(${ids}::uuid[], ${locationId}::uuid, ${range.from}::date, ${range.to}::date)`,
+    sql`select * from sensare_partner_report_daily(${ids}::uuid[], ${locationId}::uuid, ${range.from}::date, ${range.to}::date)`,
     sql<{ id: string; name: string }[]>`select id, name from sensare_products order by sort_order`,
-    partnerId ? Promise.resolve([] as { id: string; business_name: string }[]) : sql<{ id: string; business_name: string }[]>`select id, business_name from sensare_partners`,
+    partnerId ? Promise.resolve([] as { id: string; business_name: string }[]) : sql<{ id: string; business_name: string }[]>`select id, business_name from sensare_partners where ${ids ? sql`id = any(${ids}::uuid[])` : sql`true`}`,
     sql<(PartnerOrder & { partner_name: string | null; cases: number })[]>`
       select o.*, p.business_name as partner_name,
         coalesce((select sum(case_qty) from sensare_partner_order_items i where i.order_id = o.id), 0)::int as cases

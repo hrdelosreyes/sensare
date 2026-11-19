@@ -1,10 +1,11 @@
 import { NextResponse, type NextRequest } from 'next/server'
-import { getPartner } from '@/lib/auth'
+import { getPartnerAccess } from '@/lib/auth'
 import { buildReport, parseRange, reportCsv } from '@/lib/reports'
 import { getLocations } from '@/lib/partner-data'
 
 export async function GET(req: NextRequest) {
-  const partner = await getPartner()
+  const access = await getPartnerAccess()
+  const partner = access?.role === 'owner' ? access.partner : null
   if (!partner || partner.status !== 'approved') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const sp = Object.fromEntries(req.nextUrl.searchParams)
   const loc = sp.loc ? (await getLocations(partner.id, false)).find(l => l.id === sp.loc) : undefined

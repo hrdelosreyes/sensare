@@ -4,12 +4,13 @@ import { applyAction } from '../actions'
 import { ActionForm, FormMessage, SubmitButton } from '@/components/portal/forms'
 import { BUSINESS_TYPES } from '@/lib/partner'
 
-export default function ApplyForm({ loggedInEmail }: { loggedInEmail: string | null }) {
+export default function ApplyForm({ loggedInEmail, refCode = '' }: { loggedInEmail: string | null; refCode?: string }) {
   const [state, action] = useActionState(applyAction, undefined)
 
   return (
     <ActionForm action={action} className="pp-card">
       <FormMessage state={state} />
+      {refCode && <input type="hidden" name="ref" value={refCode} />}
 
       <p className="pp-h3">Your account</p>
       {loggedInEmail ? (

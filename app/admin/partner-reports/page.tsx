@@ -1,15 +1,15 @@
 import { requireAdminPage } from '@/lib/auth'
-import { db } from '@/lib/db'
+import { reportScope } from '@/lib/admin-scope'
 import { buildReport, parseRange } from '@/lib/reports'
 import ReportView from '@/components/portal/ReportView'
 
 export default async function AdminPartnerReportsPage({ searchParams }: { searchParams: Promise<{ from?: string; to?: string; preset?: string; partner?: string }> }) {
-  await requireAdminPage()
+  const admin = await requireAdminPage('reports.view')
   const sp = await searchParams
   const range = parseRange(sp)
-  const partners = await db()<{ id: string; business_name: string }[]>`select id, business_name from sensare_partners where status in ('approved', 'suspended') order by business_name`
+  const { partners, scopeIds } = await reportScope(admin)
   const partnerId = partners.some(p => p.id === sp.partner) ? sp.partner! : null
-  const report = await buildReport(partnerId, range)
+  const report = await buildReport(partnerId, range, null, scopeIds)
   const name = partners.find(p => p.id === partnerId)?.business_name
   const qs = `preset=${range.preset}&from=${range.from}&to=${range.to}${partnerId ? `&partner=${partnerId}` : ''}`
 
@@ -18,12 +18,12 @@ export default async function AdminPartnerReportsPage({ searchParams }: { search
       <p className="pp-print-only" style={{ fontWeight: 700, fontSize: 18 }}>Sensarè Partner Report — {name ?? 'All partners'}</p>
       <ReportView
         report={report}
-        title={name ? `Reports · ${name}` : 'Partner reports'}
+        title={name ? `Reports · ${name}` : admin.role === 'account_manager' ? 'My accounts · reports' : 'Partner reports'}
         csvHref={kind => `/api/admin/partner-reports?kind=${kind}&${qs}`}
         filters={
           <label><span className="pp-label">Partner</span>
             <select className="pp-select" name="partner" defaultValue={partnerId ?? ''} style={{ width: 'auto' }}>
-              <option value="">All partners</option>
+              <option value="">{admin.role === 'account_manager' ? 'All my accounts' : 'All partners'}</option>
               {partners.map(p => <option key={p.id} value={p.id}>{p.business_name}</option>)}
             </select></label>
         }

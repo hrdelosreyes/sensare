@@ -8,12 +8,16 @@ import { ConfirmButton } from '@/components/portal/forms'
 import PrintButton from '@/components/portal/PrintButton'
 import { reviewPaymentAction } from '../../actions'
 import { TransitionPanel, EditOrderForm, RecordPaymentForm } from './forms'
+import { can } from '@/lib/roles'
 
 export default async function AdminOrderPage({ params }: { params: Promise<{ id: string }> }) {
-  await requireAdminPage()
+  const admin = await requireAdminPage('orders.view')
+  const may = (p: Parameters<typeof can>[1]) => can(admin.role, p)
+  const money = may('money.view')
   const { id } = await params
   const sql = db()
-  const data = /^[0-9a-f-]{36}$/i.test(id) ? await one(sql<PartnerOrder[]>`select * from sensare_partner_orders where id = ${id}`) : null
+  const data = /^[0-9a-f-]{36}$/i.test(id) ? await one(sql<PartnerOrder[]>`select o.* from sensare_partner_orders o join sensare_partners p on p.id = o.partner_id
+    where o.id = ${id} ${admin.role === 'account_manager' ? sql`and p.account_manager_id = ${admin.user_id}` : sql``}`) : null
   if (!data) notFound()
   const order = data
   const [partner, its, pays, products, location, siblings] = await Promise.all([
@@ -36,20 +40,20 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ id:
         <div>
           <p className="pp-muted no-print"><Link href="/admin/partner-orders" className="pp-link">← Partner orders</Link></p>
           <h1 className="pp-h1">{order.order_number}</h1>
-          <p className="pp-text" style={{ marginBottom: 8 }}><Link className="pp-link" href={`/admin/partners/${partner.id}`}>{partner.business_name}</Link> · {partner.contact_name} · {partner.phone}</p>
+          <p className="pp-text" style={{ marginBottom: 8 }}>{may('partners.view') ? <Link className="pp-link" href={`/admin/partners/${partner.id}`}>{partner.business_name}</Link> : partner.business_name} · {partner.contact_name} · {partner.phone}</p>
           <div className="pp-row"><OrderStatusBadge status={order.status} />{order.status !== 'cancelled' && <PaymentStatusBadge status={order.payment_status} overdue={isOverdue(order)} />}<span className="pp-muted">Placed {fmtDate(order.created_at)}</span></div>
         </div>
         <PrintButton label="Print packing slip" />
       </div>
 
-      {order.status !== 'cancelled' && order.status !== 'delivered' && <TransitionPanel order={order} />}
+      {may('orders.fulfill') && order.status !== 'cancelled' && order.status !== 'delivered' && <TransitionPanel order={order} />}
 
       <div className="pp-grid-2">
         <div className="pp-card">
           <p className="pp-h3">Items</p>
           <div className="pp-table-wrap">
             <table className="pp-table">
-              <thead><tr><th>Product</th><th className="pp-num">Cases</th><th className="pp-num">Boxes</th>{order.status === 'submitted' && <th className="pp-num no-print">Warehouse</th>}<th className="pp-num">Case price</th><th className="pp-num">Total</th></tr></thead>
+              <thead><tr><th>Product</th><th className="pp-num">Cases</th><th className="pp-num">Boxes</th>{order.status === 'submitted' && <th className="pp-num no-print">Warehouse</th>}{money && <><th className="pp-num">Case price</th><th className="pp-num">Total</th></>}</tr></thead>
               <tbody>
                 {its.map(i => {
                   const units = i.case_qty * i.case_size
@@ -58,18 +62,18 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ id:
                     <tr key={i.id}>
                       <td>{i.product_name}</td><td className="pp-num">{i.case_qty}</td><td className="pp-num">{units}</td>
                       {order.status === 'submitted' && <td className="pp-num no-print" style={{ color: wh < units ? '#e09a9a' : undefined }}>{wh}</td>}
-                      <td className="pp-num">{peso(i.case_price_php)}</td><td className="pp-num">{peso(i.line_total_php)}</td>
+                      {money && <><td className="pp-num">{peso(i.case_price_php)}</td><td className="pp-num">{peso(i.line_total_php)}</td></>}
                     </tr>
                   )
                 })}
               </tbody>
-              <tfoot>
+              {money && <tfoot>
                 <tr><td colSpan={order.status === 'submitted' ? 5 : 4}>Subtotal</td><td className="pp-num">{peso(order.subtotal_php)}</td></tr>
                 <tr><td colSpan={order.status === 'submitted' ? 5 : 4}>Shipping</td><td className="pp-num">{peso(order.shipping_php)}</td></tr>
                 <tr><td colSpan={order.status === 'submitted' ? 5 : 4}>Total</td><td className="pp-num">{peso(order.total_php)}</td></tr>
                 <tr><td colSpan={order.status === 'submitted' ? 5 : 4}>Paid</td><td className="pp-num">{peso(order.amount_paid_php)}</td></tr>
                 <tr><td colSpan={order.status === 'submitted' ? 5 : 4}>Balance</td><td className="pp-num" style={{ color: 'var(--rose-gold)' }}>{peso(due)}</td></tr>
-              </tfoot>
+              </tfoot>}
             </table>
           </div>
           <dl className="pp-dl" style={{ marginTop: 20 }}>
@@ -87,22 +91,22 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ id:
         </div>
 
         <div className="pp-stack no-print">
-          {order.status !== 'cancelled' && (
+          {may('orders.edit') && order.status !== 'cancelled' && (
             <div className="pp-card">
               <p className="pp-h3">Order settings</p>
               <EditOrderForm order={order} />
             </div>
           )}
-          {order.status !== 'cancelled' && due > 0 && (
+          {(may('payments.record') || may('payments.collect')) && order.status !== 'cancelled' && due > 0 && (
             <div className="pp-card">
-              <p className="pp-h3">Record a payment</p>
-              <RecordPaymentForm orderId={order.id} balance={due} today={manilaToday()} />
+              <p className="pp-h3">{may('payments.record') ? 'Record a payment' : 'Log a collection'}</p>
+              <RecordPaymentForm orderId={order.id} balance={due} today={manilaToday()} collector={!may('payments.record')} />
             </div>
           )}
         </div>
       </div>
 
-      <div className="pp-card no-print">
+      {money && <div className="pp-card no-print">
         <p className="pp-h3">Payments</p>
         {pays.length === 0 ? <p className="pp-empty">No payments yet.</p> : (
           <div className="pp-table-wrap">
@@ -116,7 +120,7 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ id:
                     <td className="pp-num">{peso(p.amount_php)}</td>
                     <td>
                       {p.settlement_id && <Link className="pp-link" style={{ fontSize: 12 }} href="/admin/consignment">Consignment settlement</Link>}
-                      {p.status === 'pending' && p.method !== 'hitpay' && !p.settlement_id && (
+                      {may('payments.review') && p.status === 'pending' && p.method !== 'hitpay' && !p.settlement_id && (
                         <div className="pp-row" style={{ gap: 6 }}>
                           <form action={reviewPaymentAction}><input type="hidden" name="payment_id" value={p.id} /><input type="hidden" name="decision" value="confirmed" />
                             <ConfirmButton message={`Confirm ${peso(p.amount_php)} was received?`}>Confirm</ConfirmButton></form>
@@ -132,7 +136,7 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ id:
             </table>
           </div>
         )}
-      </div>
+      </div>}
     </div>
   )
 }

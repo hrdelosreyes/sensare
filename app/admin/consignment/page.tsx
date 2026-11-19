@@ -8,20 +8,25 @@ import { ConfirmButton } from '@/components/portal/forms'
 import SettlementPreview, { periodLabel } from '@/components/portal/SettlementPreview'
 import { reviewSettlementAction } from '../actions'
 import RecordSettlementForm from './RecordSettlementForm'
+import { can } from '@/lib/roles'
 
 export default async function AdminConsignmentPage({ searchParams }: { searchParams: Promise<{ partner?: string; to?: string }> }) {
-  await requireAdminPage()
+  const admin = await requireAdminPage('consignment.view')
+  const may = (p: Parameters<typeof can>[1]) => can(admin.role, p)
+  const recorder = may('payments.record') || may('payments.collect')
   const sp = await searchParams
   const sql = db()
   const today = manilaToday()
+  const mine = admin.role === 'account_manager' ? sql`and p.account_manager_id = ${admin.user_id}` : sql``
   const [settlements, consOrders, consPartners] = await Promise.all([
     sql<(Settlement & { business_name: string })[]>`
       select s.*, p.business_name from sensare_partner_consignment_settlements s
       join sensare_partners p on p.id = s.partner_id
-      where s.status <> 'failed' order by s.created_at desc limit 100`,
-    sql<PartnerOrder[]>`select * from sensare_partner_orders where payment_terms = 'consignment' and status = 'delivered'`,
-    sql<Partner[]>`select * from sensare_partners where id in (
-      select partner_id from sensare_partner_orders where payment_terms = 'consignment' and status = 'delivered')`,
+      where s.status <> 'failed' ${mine} order by s.created_at desc limit 100`,
+    sql<PartnerOrder[]>`select o.* from sensare_partner_orders o join sensare_partners p on p.id = o.partner_id
+      where o.payment_terms = 'consignment' and o.status = 'delivered' ${mine}`,
+    sql<Partner[]>`select p.* from sensare_partners p where p.id in (
+      select partner_id from sensare_partner_orders where payment_terms = 'consignment' and status = 'delivered') ${mine}`,
   ])
   const partnerById = new Map(consPartners.map(p => [p.id, p]))
   const pending = settlements.filter(s => s.status === 'pending' && s.method !== 'hitpay')
@@ -58,7 +63,7 @@ export default async function AdminConsignmentPage({ searchParams }: { searchPar
         <p className="pp-muted">Partners pay for consignment stock as it sells, settling their recorded sales every period (default 7 days, set per partner).</p>
       </div>
 
-      {pending.length > 0 && (
+      {may('payments.review') && pending.length > 0 && (
         <div className="pp-card" style={{ borderColor: 'rgba(230,180,80,0.4)' }}>
           <p className="pp-h2">Bank transfers to verify</p>
           <div className="pp-table-wrap">
@@ -99,7 +104,7 @@ export default async function AdminConsignmentPage({ searchParams }: { searchPar
                     <td>{r.st.nextFrom && r.st.defaultTo ? periodLabel(r.st.nextFrom, r.st.defaultTo) : 'Settled to date'}{r.st.isDue && <span className="pp-badge pp-badge-warn" style={{ marginLeft: 8 }}>Due</span>}</td>
                     <td className="pp-num">{peso(r.due, 0)}</td>
                     <td className="pp-num">{peso(r.outstanding, 0)}</td>
-                    <td>{r.st.nextFrom && <Link className="pp-btn pp-btn-ghost pp-btn-sm" href={`/admin/consignment?partner=${r.partner.id}`}>Record payment</Link>}</td>
+                    <td>{recorder && r.st.nextFrom && <Link className="pp-btn pp-btn-ghost pp-btn-sm" href={`/admin/consignment?partner=${r.partner.id}`}>{may('payments.record') ? 'Record payment' : 'Log collection'}</Link>}</td>
                   </tr>
                 ))}
               </tbody>
@@ -108,7 +113,7 @@ export default async function AdminConsignmentPage({ searchParams }: { searchPar
         )}
       </div>
 
-      {sel && sel.st.nextFrom && selTo && (
+      {recorder && sel && sel.st.nextFrom && selTo && (
         <div className="pp-card" id="record">
           <div className="pp-row" style={{ justifyContent: 'space-between', marginBottom: 14 }}>
             <p className="pp-h2" style={{ marginBottom: 0 }}>Record settlement · {sel.partner.business_name}</p>
@@ -122,7 +127,7 @@ export default async function AdminConsignmentPage({ searchParams }: { searchPar
           {selLines.length === 0 ? <p className="pp-empty">No consignment sales recorded in this period.</p> : (
             <>
               <SettlementPreview lines={selLines} locName={locName} />
-              <RecordSettlementForm partnerId={sel.partner.id} to={selTo} amount={selLines.reduce((s, l) => s + l.amount_php, 0)} today={today} />
+              <RecordSettlementForm partnerId={sel.partner.id} to={selTo} amount={selLines.reduce((s, l) => s + l.amount_php, 0)} today={today} collector={!may('payments.record')} />
             </>
           )}
         </div>

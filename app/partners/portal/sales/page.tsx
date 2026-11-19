@@ -1,16 +1,19 @@
 import Link from 'next/link'
-import { requireApprovedPartnerPage } from '@/lib/auth'
+import { requirePartnerAccessPage } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { getLocations } from '@/lib/partner-data'
 import { addDays, fmtDate, isIsoDate, locationLabel, manilaToday, peso } from '@/lib/partner'
 import SalesForm from './SalesForm'
 
 export default async function SalesPage({ searchParams }: { searchParams: Promise<{ date?: string; loc?: string }> }) {
-  const partner = await requireApprovedPartnerPage()
+  const { partner, locationIds } = await requirePartnerAccessPage({ allowStaff: true })
   const today = manilaToday()
   const sp = await searchParams
   const date = isIsoDate(sp.date) && sp.date <= today ? sp.date : today
-  const locations = await getLocations(partner.id)
+  const allLocations = await getLocations(partner.id)
+  const locations = allLocations.filter(l => !locationIds || locationIds.includes(l.id))
+  const named = allLocations.length > 1
+  if (!locations.length) return <div className="pp-card"><p className="pp-empty">You haven&apos;t been assigned to a branch yet. Ask the account owner.</p></div>
   const loc = locations.find(l => l.id === sp.loc) ?? locations[0]
   const sql = db()
 
@@ -74,10 +77,10 @@ export default async function SalesPage({ searchParams }: { searchParams: Promis
           ) : null}
           {rows.length === 0
             ? <p className="pp-empty">{locations.length > 1 ? `${locationLabel(loc)} has` : 'You have'} no stock to sell yet. Once an order is delivered, you can record sales here.</p>
-            : <SalesForm key={`${date}${loc.id}`} date={date} today={today} minDate={addDays(today, -90)} rows={rows} locationId={loc.id} locationName={locations.length > 1 ? locationLabel(loc) : null} locked={!!settled?.length} />}
+            : <SalesForm key={`${date}${loc.id}`} date={date} today={today} minDate={addDays(today, -90)} rows={rows} locationId={loc.id} locationName={named ? locationLabel(loc) : null} locked={!!settled?.length} />}
         </div>
         <div className="pp-card">
-          <p className="pp-h2">Last 14 days{locations.length > 1 ? ` · ${locationLabel(loc)}` : ''}</p>
+          <p className="pp-h2">Last 14 days{named ? ` · ${locationLabel(loc)}` : ''}</p>
           <div className="pp-table-wrap">
             <table className="pp-table">
               <thead><tr><th>Date</th><th className="pp-num">Boxes sold</th><th className="pp-num">Sales value</th><th></th></tr></thead>

@@ -1,10 +1,22 @@
-import { requireApprovedPartnerPage } from '@/lib/auth'
+import { requirePartnerAccessPage } from '@/lib/auth'
 import { BUSINESS_TYPES, fmtDate, PAYMENT_TERMS } from '@/lib/partner'
 import AccountForm from './AccountForm'
 import ResetForm from '../../reset-password/ResetForm'
 
 export default async function AccountPage() {
-  const partner = await requireApprovedPartnerPage()
+  const { partner, role } = await requirePartnerAccessPage({ allowStaff: true })
+  if (role === 'branch_staff') {
+    return (
+      <div className="pp-stack">
+        <h1 className="pp-h1">Account</h1>
+        <div className="pp-card" style={{ maxWidth: 520 }}>
+          <p className="pp-muted" style={{ marginBottom: 16 }}>You&apos;re branch staff for {partner.business_name}.</p>
+          <p className="pp-h2">Change password</p>
+          <ResetForm mode="change" />
+        </div>
+      </div>
+    )
+  }
   return (
     <div className="pp-stack">
       <h1 className="pp-h1">Account</h1>

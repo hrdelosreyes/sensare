@@ -1,4 +1,4 @@
-import { requireApprovedPartnerPage } from '@/lib/auth'
+import { requirePartnerAccessPage } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { getLocations } from '@/lib/partner-data'
 import { getStockPlan, getForecastSettings } from '@/lib/forecast'
@@ -7,10 +7,12 @@ import AdjustForm from './AdjustForm'
 import StockTable from '@/components/portal/StockTable'
 
 export default async function InventoryPage() {
-  const partner = await requireApprovedPartnerPage()
-  const [locations, cfg] = await Promise.all([getLocations(partner.id, false), getForecastSettings()])
-  const [plan, moves] = await Promise.all([
-    getStockPlan(partner.id, cfg, locations),
+  const { partner, locationIds } = await requirePartnerAccessPage({ allowStaff: true })
+  const allowed = (id: string) => !locationIds || locationIds.includes(id)
+  const [allLocations, cfg] = await Promise.all([getLocations(partner.id, false), getForecastSettings()])
+  const locations = allLocations.filter(l => allowed(l.id))
+  const [fullPlan, allMoves] = await Promise.all([
+    getStockPlan(partner.id, cfg, allLocations),
     db()<{ id: string; movement_date: string; movement_type: string; reason: string; notes: string | null; qty_change: number
       product_name: string; order_number: string | null; location_name: string }[]>`
       select m.*, p.name as product_name, o.order_number, l.name as location_name
@@ -19,8 +21,10 @@ export default async function InventoryPage() {
       join sensare_partner_locations l on l.id = m.location_id
       left join sensare_partner_orders o on o.id = m.order_id
       where m.partner_id = ${partner.id}
-      order by m.created_at desc limit 80`,
+      order by m.created_at desc limit 200`,
   ])
+  const plan = fullPlan.filter(p => allowed(p.location_id))
+  const moves = allMoves.filter(m => allowed((m as unknown as { location_id: string }).location_id)).slice(0, 80)
   const multi = locations.filter(l => l.is_active).length > 1
   const totalOnHand = plan.reduce((s, r) => s + r.on_hand, 0)
 

@@ -28,6 +28,7 @@ export type Partner = {
   created_at: string
   consignment_period_days: number
   consignment_reminded_at: string | null
+  account_manager_id: string | null
 }
 
 export type Location = {

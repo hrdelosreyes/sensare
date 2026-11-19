@@ -1,12 +1,15 @@
 'use server'
 
+import { randomBytes } from 'crypto'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { db, dbMessage, one } from '@/lib/db'
 import {
   createUser, endSession, findUserByEmail, getAdmin, isEmail, normalizeEmail, requireAdmin, setPassword, signIn, verifyPassword,
+  type Admin,
 } from '@/lib/auth'
 import { email } from '@/lib/email'
+import { can, homeFor, isStaffRole } from '@/lib/roles'
 import { cancelPendingOnlineSettlements, createSettlement, getConsignmentState } from '@/lib/consignment'
 import { refreshSuggestion } from '@/lib/forecast'
 import {
@@ -32,11 +35,12 @@ const errMsg = (e: unknown) => dbMessage(e) || 'Something went wrong.'
 export async function adminLoginAction(_prev: FormState, fd: FormData): Promise<FormState> {
   const res = await signIn(str(fd, 'email', 200), String(fd.get('password') ?? ''))
   if (res.error) return { error: res.error }
-  if (!(await getAdmin())) {
+  const admin = await getAdmin()
+  if (!admin) {
     await endSession()
     return { error: 'This account does not have admin access.' }
   }
-  redirect('/admin')
+  redirect(homeFor(admin.role))
 }
 
 export async function adminLogoutAction() {
@@ -46,12 +50,16 @@ export async function adminLogoutAction() {
 
 // ---------------------------------------------------------------- Partners
 
-async function loadPartner(id: string) {
-  return isUuid(id) ? one(db()<Partner[]>`select * from sensare_partners where id = ${id}`) : null
+// Account managers can only load their own partners (and those partners' orders).
+const scope = (admin: Admin | null, col: string) =>
+  admin?.role === 'account_manager' ? db()`and ${db()(col)} = ${admin.user_id}` : db()``
+
+async function loadPartner(id: string, admin: Admin | null = null) {
+  return isUuid(id) ? one(db()<Partner[]>`select * from sensare_partners where id = ${id} ${scope(admin, 'account_manager_id')}`) : null
 }
 
 export async function setPartnerStatusAction(_prev: FormState, fd: FormData): Promise<FormState> {
-  const admin = await requireAdmin()
+  const admin = await requireAdmin('partners.approve')
   const status = str(fd, 'status', 20)
   if (!['approved', 'rejected', 'suspended', 'pending'].includes(status)) return { error: 'Invalid status.' }
   const note = str(fd, 'note', 1000) || null
@@ -70,7 +78,7 @@ export async function setPartnerStatusAction(_prev: FormState, fd: FormData): Pr
 }
 
 export async function updatePartnerAdminAction(_prev: FormState, fd: FormData): Promise<FormState> {
-  await requireAdmin()
+  await requireAdmin('partners.edit')
   const partner = await loadPartner(str(fd, 'partner_id', 64))
   if (!partner) return { error: 'Partner not found.' }
   const terms = str(fd, 'default_payment_terms', 20)
@@ -79,7 +87,12 @@ export async function updatePartnerAdminAction(_prev: FormState, fd: FormData): 
   if (!business_name) return { error: 'Business name is required.' }
   const period = Math.floor(Number(fd.get('consignment_period_days') || 7))
   if (!(period >= 1 && period <= 90)) return { error: 'Settlement period must be 1–90 days.' }
+  const am = str(fd, 'account_manager_id', 64)
+  if (am && !(await one(db()`select 1 from sensare_admins where user_id = ${am} and role = 'account_manager' and is_active`))) {
+    return { error: 'Choose an active account manager.' }
+  }
   await db()`update sensare_partners set ${db()({
+    account_manager_id: am || null,
     consignment_period_days: period,
     default_payment_terms: terms,
     business_name,
@@ -91,7 +104,7 @@ export async function updatePartnerAdminAction(_prev: FormState, fd: FormData): 
 }
 
 export async function savePartnerPricesAction(_prev: FormState, fd: FormData): Promise<FormState> {
-  await requireAdmin()
+  await requireAdmin('partners.prices')
   const partner = await loadPartner(str(fd, 'partner_id', 64))
   if (!partner) return { error: 'Partner not found.' }
   const rows = []
@@ -110,7 +123,7 @@ export async function savePartnerPricesAction(_prev: FormState, fd: FormData): P
 }
 
 export async function adminAdjustInventoryAction(_prev: FormState, fd: FormData): Promise<FormState> {
-  const admin = await requireAdmin()
+  const admin = await requireAdmin('partners.edit')
   const partnerId = str(fd, 'partner_id', 64)
   const qty = Math.trunc(Number(fd.get('qty')))
   const reason = str(fd, 'reason', 50)
@@ -130,8 +143,8 @@ export async function adminAdjustInventoryAction(_prev: FormState, fd: FormData)
 }
 
 export async function generateSuggestionAction(fd: FormData) {
-  await requireAdmin()
-  const partner = await loadPartner(str(fd, 'partner_id', 64))
+  const admin = await requireAdmin('partners.suggest')
+  const partner = await loadPartner(str(fd, 'partner_id', 64), admin)
   if (!partner) return
   await refreshSuggestion(partner, fd.get('notify') === 'on')
   revalidatePath(`/admin/partners/${partner.id}`)
@@ -141,16 +154,16 @@ export async function generateSuggestionAction(fd: FormData) {
 
 type OrderWithPartner = PartnerOrder & { partner_email: string; business_name: string }
 
-async function loadOrder(id: string): Promise<OrderWithPartner | null> {
+async function loadOrder(id: string, admin: Admin | null = null): Promise<OrderWithPartner | null> {
   if (!isUuid(id)) return null
   return one(db()<OrderWithPartner[]>`
     select o.*, p.email as partner_email, p.business_name
     from sensare_partner_orders o join sensare_partners p on p.id = o.partner_id
-    where o.id = ${id}`)
+    where o.id = ${id} ${scope(admin, 'p.account_manager_id')}`)
 }
 
 export async function orderTransitionAction(_prev: FormState, fd: FormData): Promise<FormState> {
-  const admin = await requireAdmin()
+  const admin = await requireAdmin('orders.fulfill')
   const id = str(fd, 'order_id', 64)
   const to = str(fd, 'to', 20)
   const order = await loadOrder(id)
@@ -183,7 +196,7 @@ export async function orderTransitionAction(_prev: FormState, fd: FormData): Pro
 }
 
 export async function updateOrderAction(_prev: FormState, fd: FormData): Promise<FormState> {
-  await requireAdmin()
+  await requireAdmin('orders.edit')
   const id = str(fd, 'order_id', 64)
   const order = await loadOrder(id)
   if (!order) return { error: 'Order not found.' }
@@ -219,8 +232,10 @@ export async function updateOrderAction(_prev: FormState, fd: FormData): Promise
 
 export async function recordPaymentAction(_prev: FormState, fd: FormData): Promise<FormState> {
   const admin = await requireAdmin()
+  const confirms = can(admin.role, 'payments.record')
+  if (!confirms && !can(admin.role, 'payments.collect')) return { error: 'Not allowed.' }
   const id = str(fd, 'order_id', 64)
-  const order = await loadOrder(id)
+  const order = await loadOrder(id, admin)
   if (!order || order.status === 'cancelled') return { error: 'Order not found.' }
   const amount = money(fd.get('amount'))
   const method = str(fd, 'method', 20) as PaymentMethod
@@ -228,19 +243,26 @@ export async function recordPaymentAction(_prev: FormState, fd: FormData): Promi
   if (!(method in PAYMENT_METHOD) || method === 'hitpay') return { error: 'Choose a payment method.' }
   const paidOn = str(fd, 'paid_on', 10)
 
+  if (!confirms && method === 'return_credit') return { error: 'Return credits are recorded by Finance.' }
+
   await db()`insert into sensare_partner_payments ${db()({
-    order_id: id, partner_id: order.partner_id, amount_php: amount, method, status: 'confirmed',
-    reference: str(fd, 'reference', 100) || null, notes: str(fd, 'notes', 500) || null,
+    order_id: id, partner_id: order.partner_id, amount_php: amount, method,
+    status: confirms ? 'confirmed' : 'pending',
+    reference: str(fd, 'reference', 100) || null,
+    notes: [confirms ? null : `Collected by ${admin.name || admin.email}`, str(fd, 'notes', 500) || null].filter(Boolean).join(' · ') || null,
     paid_on: isIsoDate(paidOn) ? paidOn : manilaToday(),
-    created_by: admin.user_id, confirmed_by: admin.user_id, confirmed_at: new Date().toISOString(),
+    created_by: admin.user_id,
+    confirmed_by: confirms ? admin.user_id : null,
+    confirmed_at: confirms ? new Date().toISOString() : null,
   })}`
-  if (fd.get('notify') === 'on') await email.paymentConfirmed(order, { email: order.partner_email }, amount)
+  if (confirms && fd.get('notify') === 'on') await email.paymentConfirmed(order, { email: order.partner_email }, amount)
+  if (!confirms) await email.collectionLogged(order, admin.name || admin.email, amount, method)
   revalidatePath(`/admin/partner-orders/${id}`)
-  return { ok: 'Payment recorded.' }
+  return { ok: confirms ? 'Payment recorded.' : 'Collection logged. It will count once Finance confirms the money arrived.' }
 }
 
 export async function reviewPaymentAction(fd: FormData) {
-  const admin = await requireAdmin()
+  const admin = await requireAdmin('payments.review')
   const paymentId = str(fd, 'payment_id', 64)
   const decision = str(fd, 'decision', 20)
   if (!isUuid(paymentId) || (decision !== 'confirmed' && decision !== 'rejected')) return
@@ -260,39 +282,86 @@ export async function reviewPaymentAction(fd: FormData) {
 
 // ---------------------------------------------------------------- Team
 
+const newReferralCode = () => randomBytes(4).toString('hex').toUpperCase()
+
+function readStaffFields(fd: FormData) {
+  const role = str(fd, 'role', 30)
+  const pctRaw = str(fd, 'commission_pct', 10)
+  const pct = pctRaw === '' ? null : Number(pctRaw)
+  return { role, pct, phone: str(fd, 'phone', 50) || null }
+}
+
 export async function addAdminAction(_prev: FormState, fd: FormData): Promise<FormState> {
-  const admin = await requireAdmin()
+  const admin = await requireAdmin('team.manage')
   const emailAddr = normalizeEmail(str(fd, 'email', 200))
   const name = str(fd, 'name', 100) || null
   const password = String(fd.get('password') ?? '')
+  const { role, pct, phone } = readStaffFields(fd)
   if (!isEmail(emailAddr)) return { error: 'Enter a valid email.' }
+  if (!isStaffRole(role)) return { error: 'Choose a role.' }
+  if (pct !== null && !(pct >= 0 && pct <= 100)) return { error: 'Commission must be between 0 and 100%.' }
 
   // Existing account (e.g. a partner)? Grant access to it; otherwise create one.
   let userId = (await findUserByEmail(emailAddr))?.id
   const isNew = !userId
   if (isNew) {
-    if (password.length < 10) return { error: 'Set a temporary password of at least 10 characters for the new admin.' }
+    if (password.length < 10) return { error: 'Set a temporary password of at least 10 characters for the new team member.' }
     userId = (await createUser(emailAddr, password))?.id
     if (!userId) return { error: 'Could not create the account. Please try again.' }
+  } else if (await one(db()`select 1 from sensare_partners where user_id = ${userId!}`)) {
+    return { error: 'That email belongs to a partner account. Use a different email for staff.' }
   }
 
-  await db()`insert into sensare_admins (user_id, email, name, created_by)
-    values (${userId!}, ${emailAddr}, ${name}, ${admin.user_id})
-    on conflict (user_id) do update set name = coalesce(excluded.name, sensare_admins.name)`
+  const isAm = role === 'account_manager'
+  await db()`insert into sensare_admins (user_id, email, name, role, commission_pct, referral_code, phone, created_by, is_active)
+    values (${userId!}, ${emailAddr}, ${name}, ${role}, ${isAm ? pct ?? 0 : null}, ${isAm ? newReferralCode() : null}, ${phone}, ${admin.user_id}, true)
+    on conflict (user_id) do update set name = coalesce(excluded.name, sensare_admins.name), role = excluded.role,
+      commission_pct = excluded.commission_pct, phone = coalesce(excluded.phone, sensare_admins.phone), is_active = true,
+      referral_code = coalesce(sensare_admins.referral_code, excluded.referral_code)`
   revalidatePath('/admin/team')
   return {
     ok: isNew
-      ? `Admin added. Share the temporary password with ${emailAddr} privately; they can change it under Team after logging in.`
-      : `${emailAddr} already had an account and now has admin access with their existing password.`,
+      ? `Added. Share the temporary password with ${emailAddr} privately; they can change it under My Account after logging in.`
+      : `${emailAddr} already had an account and now has access with their existing password.`,
   }
 }
 
+/** Change a team member's role, commission or active state. Keeps at least one active Owner. */
+export async function updateStaffAction(_prev: FormState, fd: FormData): Promise<FormState> {
+  const admin = await requireAdmin('team.manage')
+  const userId = str(fd, 'user_id', 64)
+  const { role, pct, phone } = readStaffFields(fd)
+  const active = fd.get('is_active') === 'on'
+  if (!isUuid(userId)) return { error: 'Team member not found.' }
+  if (!isStaffRole(role)) return { error: 'Choose a role.' }
+  if (pct !== null && !(pct >= 0 && pct <= 100)) return { error: 'Commission must be between 0 and 100%.' }
+  if (userId === admin.user_id && (role !== 'owner' || !active)) return { error: 'You can’t remove your own Owner access. Ask another Owner.' }
+
+  const isAm = role === 'account_manager'
+  const updated = await db().begin(async tx => {
+    const rows = await tx`update sensare_admins set role = ${role}, is_active = ${active}, phone = ${phone},
+        commission_pct = ${isAm ? pct ?? 0 : null},
+        referral_code = case when ${isAm} then coalesce(referral_code, ${newReferralCode()}) else referral_code end
+      where user_id = ${userId} returning user_id`
+    const [{ owners }] = await tx<{ owners: number }[]>`select count(*)::int as owners from sensare_admins where role = 'owner' and is_active`
+    if (owners < 1) throw new Error('last-owner')
+    return rows.length > 0
+  }).catch(e => (e instanceof Error && e.message === 'last-owner' ? 'last-owner' : Promise.reject(e)))
+  if (updated === 'last-owner') return { error: 'There must always be at least one active Owner.' }
+  if (!updated) return { error: 'Team member not found.' }
+  if (!active) await db()`delete from sensare_sessions where user_id = ${userId}`
+  revalidatePath('/admin/team')
+  return { ok: 'Saved.' }
+}
+
 export async function removeAdminAction(fd: FormData) {
-  const admin = await requireAdmin()
+  const admin = await requireAdmin('team.manage')
   const userId = str(fd, 'user_id', 64)
   if (!isUuid(userId) || userId === admin.user_id) return
-  // Never remove the last admin.
-  await db()`delete from sensare_admins where user_id = ${userId} and (select count(*) from sensare_admins) > 1`
+  // Never remove the last active Owner.
+  await db()`delete from sensare_admins where user_id = ${userId}
+    and (role <> 'owner' or (select count(*) from sensare_admins where role = 'owner' and is_active) > 1)`
+  await db()`update sensare_partners set account_manager_id = null where account_manager_id = ${userId}`
   revalidatePath('/admin/team')
 }
 
@@ -312,7 +381,7 @@ export async function changeOwnPasswordAction(_prev: FormState, fd: FormData): P
 // ---------------------------------------------------------------- Settings
 
 export async function saveSettingsAction(_prev: FormState, fd: FormData): Promise<FormState> {
-  await requireAdmin()
+  await requireAdmin('settings.manage')
   const n = (k: string) => Math.floor(Number(fd.get(k)))
   const lead = n('partner_lead_time_days'), cover = n('partner_cover_days'), safety = n('partner_safety_days')
   if (!(lead >= 1 && lead <= 90)) return { error: 'Lead time must be 1–90 days.' }
@@ -350,7 +419,7 @@ export async function saveSettingsAction(_prev: FormState, fd: FormData): Promis
 // ---------------------------------------------------------------- Consignment
 
 export async function reviewSettlementAction(fd: FormData) {
-  const admin = await requireAdmin()
+  const admin = await requireAdmin('payments.review')
   const id = str(fd, 'settlement_id', 64)
   const decision = str(fd, 'decision', 20)
   if (!isUuid(id) || (decision !== 'confirmed' && decision !== 'rejected')) return
@@ -369,10 +438,12 @@ export async function reviewSettlementAction(fd: FormData) {
 
 export async function recordSettlementAction(_prev: FormState, fd: FormData): Promise<FormState> {
   const admin = await requireAdmin()
+  const confirms = can(admin.role, 'payments.record')
+  if (!confirms && !can(admin.role, 'payments.collect')) return { error: 'Not allowed.' }
   const to = str(fd, 'period_to', 10)
   const method = str(fd, 'method', 20)
   if (!['cash', 'check', 'bank_transfer', 'other'].includes(method)) return { error: 'Choose a payment method.' }
-  const partner = await loadPartner(str(fd, 'partner_id', 64))
+  const partner = await loadPartner(str(fd, 'partner_id', 64), admin)
   if (!partner) return { error: 'Partner not found.' }
   await cancelPendingOnlineSettlements(partner.id)
   const state = await getConsignmentState(partner)
@@ -380,12 +451,14 @@ export async function recordSettlementAction(_prev: FormState, fd: FormData): Pr
   if (!isIsoDate(to) || to < state.nextFrom || to > manilaToday()) return { error: 'Choose a valid period end date.' }
   const paidOn = str(fd, 'paid_on', 10)
   const res = await createSettlement({
-    partnerId: partner.id, from: state.nextFrom, to, method, status: 'confirmed',
-    reference: str(fd, 'reference', 100) || null, notes: str(fd, 'notes', 500) || null,
+    partnerId: partner.id, from: state.nextFrom, to, method, status: confirms ? 'confirmed' : 'pending',
+    reference: str(fd, 'reference', 100) || null,
+    notes: [confirms ? null : `Collected by ${admin.name || admin.email}`, str(fd, 'notes', 500) || null].filter(Boolean).join(' · ') || null,
     paidOn: isIsoDate(paidOn) ? paidOn : manilaToday(), userId: admin.user_id,
   })
   if (res.error) return { error: res.error }
-  if (fd.get('notify') === 'on') await email.settlementConfirmed(partner, res.amount ?? 0, state.nextFrom, to)
+  if (confirms && fd.get('notify') === 'on') await email.settlementConfirmed(partner, res.amount ?? 0, state.nextFrom, to)
+  if (!confirms) await email.settlementReported(partner, res.amount ?? 0, `cash collected by ${admin.name || admin.email}`, state.nextFrom, to)
   revalidatePath('/admin', 'layout')
-  return { ok: 'Settlement recorded.' }
+  return { ok: confirms ? 'Settlement recorded.' : 'Collection logged. It will count once Finance confirms the money arrived.' }
 }

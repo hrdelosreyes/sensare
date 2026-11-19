@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { requireApprovedPartnerPage } from '@/lib/auth'
+import { requirePartnerAccessPage } from '@/lib/auth'
 import { db } from '@/lib/db'
 import NavTabs from '@/components/portal/NavTabs'
 import { logoutAction } from '../actions'
@@ -10,14 +10,19 @@ export const metadata: Metadata = {
 }
 
 export default async function PortalLayout({ children }: { children: React.ReactNode }) {
-  const partner = await requireApprovedPartnerPage()
+  const { partner, role } = await requirePartnerAccessPage({ allowStaff: true })
+  const staff = role === 'branch_staff'
   const [{ openSuggestions, consignmentOrders }] = await db()<{ openSuggestions: number; consignmentOrders: number }[]>`
     select
       (select count(*) from sensare_partner_order_suggestions where partner_id = ${partner.id} and status = 'open')::int as "openSuggestions",
       (select count(*) from sensare_partner_orders where partner_id = ${partner.id} and payment_terms = 'consignment' and status <> 'cancelled')::int as "consignmentOrders"`
   const showConsignment = partner.default_payment_terms === 'consignment' || (consignmentOrders ?? 0) > 0
 
-  const links = [
+  const links = staff ? [
+    { href: '/partners/portal/sales', label: 'Daily Sales' },
+    { href: '/partners/portal/inventory', label: 'Inventory' },
+    { href: '/partners/portal/account', label: 'Account' },
+  ] : [
     { href: '/partners/portal', label: 'Dashboard', exact: true },
     { href: '/partners/portal/suggested', label: openSuggestions ? 'Suggested Order •' : 'Suggested Order' },
     { href: '/partners/portal/order', label: 'New Order' },
@@ -27,6 +32,7 @@ export default async function PortalLayout({ children }: { children: React.React
     ...(showConsignment ? [{ href: '/partners/portal/consignment', label: 'Consignment' }] : []),
     { href: '/partners/portal/reports', label: 'Reports' },
     { href: '/partners/portal/branches', label: 'Branches' },
+    { href: '/partners/portal/team', label: 'Team' },
     { href: '/partners/portal/account', label: 'Account' },
   ]
 

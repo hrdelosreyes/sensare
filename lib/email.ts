@@ -32,9 +32,14 @@ async function send(to: string | string[], subject: string, html: string) {
   }
 }
 
-async function adminEmails(): Promise<string[]> {
-  const rows = await db()<{ email: string }[]>`select email from sensare_admins`
-  return rows.map(a => a.email)
+// Staff alerts go to the roles that act on them, plus the partner's account manager.
+async function staffEmails(roles: string[], partnerEmail?: string): Promise<string[]> {
+  const rows = await db()<{ email: string }[]>`
+    select email from sensare_admins where is_active and (
+      role = any(${roles}::text[])
+      or (role = 'account_manager' and ${partnerEmail ?? null}::text is not null and user_id in (
+        select account_manager_id from sensare_partners where lower(email) = lower(${partnerEmail ?? ''}))))`
+  return [...new Set(rows.map(a => a.email))]
 }
 
 export const email = {
@@ -42,7 +47,7 @@ export const email = {
     await send(p.email, 'We received your Sensarè partner application',
       layout(`Thank you, ${p.contact_name}.`,
         `<p>We've received the partner application for <strong>${esc(p.business_name)}</strong>. Our team reviews applications within 1–3 business days, and we'll email you as soon as your account is approved.</p>`))
-    await send(await adminEmails(), `New partner application: ${p.business_name}`,
+    await send(await staffEmails(['owner', 'manager'], p.email), `New partner application: ${p.business_name}`,
       layout('New partner application', `<p><strong>${esc(p.business_name)}</strong> (${esc(p.contact_name)}, ${esc(p.email)}) applied to the partner program.</p>`,
         { label: 'Review application', href: `${SITE_URL}/admin/partners?status=pending` }))
   },
@@ -69,7 +74,7 @@ export const email = {
       layout('We received your order',
         `<p>Order <strong>${esc(order.order_number)}</strong> (₱${Number(order.total_php).toLocaleString('en-PH', { minimumFractionDigits: 2 })}) is with our team. We'll confirm it and let you know the shipping fee, if any.</p>`,
         { label: 'View order', href: `${SITE_URL}/partners/portal/orders/${order.id}` }))
-    await send(await adminEmails(), `New partner order ${order.order_number} — ${partner.business_name}`,
+    await send(await staffEmails(['owner', 'manager', 'fulfillment'], partner.email), `New partner order ${order.order_number} — ${partner.business_name}`,
       layout('New partner order', `<p><strong>${esc(partner.business_name)}</strong> placed order <strong>${esc(order.order_number)}</strong> for ₱${Number(order.total_php).toLocaleString('en-PH', { minimumFractionDigits: 2 })}.</p>`,
         { label: 'Review order', href: `${SITE_URL}/admin/partner-orders/${order.id}` }))
   },
@@ -87,8 +92,8 @@ export const email = {
         { label: 'View order', href: `${SITE_URL}/partners/portal/orders/${order.id}` }))
   },
 
-  async paymentReported(order: { id: string; order_number: string }, partner: { business_name: string }, amount: number, ref: string) {
-    await send(await adminEmails(), `Bank transfer to verify — ${order.order_number}`,
+  async paymentReported(order: { id: string; order_number: string }, partner: { business_name: string; email?: string }, amount: number, ref: string) {
+    await send(await staffEmails(['owner', 'manager', 'finance'], partner.email), `Bank transfer to verify — ${order.order_number}`,
       layout('Payment awaiting verification',
         `<p><strong>${esc(partner.business_name)}</strong> reported a bank transfer of <strong>₱${amount.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</strong> for order ${esc(order.order_number)} (ref: ${esc(ref)}).</p>`,
         { label: 'Verify payment', href: `${SITE_URL}/admin/partner-orders/${order.id}` }))
@@ -114,8 +119,8 @@ export const email = {
         { label: 'Settle consignment', href: `${SITE_URL}/partners/portal/consignment` }))
   },
 
-  async settlementReported(partner: { business_name: string }, amount: number, ref: string, from: string, to: string) {
-    await send(await adminEmails(), `Consignment transfer to verify — ${partner.business_name}`,
+  async settlementReported(partner: { business_name: string; email?: string }, amount: number, ref: string, from: string, to: string) {
+    await send(await staffEmails(['owner', 'manager', 'finance'], partner.email), `Consignment transfer to verify — ${partner.business_name}`,
       layout('Consignment payment awaiting verification',
         `<p><strong>${esc(partner.business_name)}</strong> reported a bank transfer of <strong>₱${amount.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</strong> (ref: ${esc(ref)}) for consignment sales ${esc(from)} – ${esc(to)}.</p>`,
         { label: 'Verify payment', href: `${SITE_URL}/admin/consignment` }))
@@ -128,7 +133,7 @@ export const email = {
   },
 
   async lateSettlementPayment(settlementId: string, amount: number) {
-    await send(await adminEmails(), 'Check: late consignment payment received',
+    await send(await staffEmails(['owner', 'finance']), 'Check: late consignment payment received',
       layout('Late consignment payment',
         `<p>HitPay confirmed a consignment payment of <strong>₱${amount.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</strong> after its checkout had expired. It has been recorded — please check the partner hasn't paid the same period twice.</p><p style="font-size:12px;color:#a08070;">Settlement ${esc(settlementId)}</p>`,
         { label: 'Open consignment', href: `${SITE_URL}/admin/consignment` }))
@@ -139,5 +144,12 @@ export const email = {
       layout('Reset your password',
         `<p>We received a request to reset the password for your Sensarè account. This link works once and expires in 1 hour.</p><p>If you didn't ask for this, you can ignore this email — your password won't change.</p>`,
         { label: 'Set a new password', href: `${SITE_URL}/partners/reset-password?token=${encodeURIComponent(token)}` }))
+  },
+
+  async collectionLogged(order: { id: string; order_number: string; business_name: string }, by: string, amount: number, method: string) {
+    await send(await staffEmails(['owner', 'manager', 'finance']), `Collection to confirm — ${order.order_number}`,
+      layout('Collection awaiting confirmation',
+        `<p><strong>${esc(by)}</strong> logged a ${esc(method.replace('_', ' '))} collection of <strong>₱${amount.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</strong> from <strong>${esc(order.business_name)}</strong> for order ${esc(order.order_number)}. Confirm it once the money has arrived.</p>`,
+        { label: 'Review collection', href: `${SITE_URL}/admin/partner-orders/${order.id}` }))
   },
 }

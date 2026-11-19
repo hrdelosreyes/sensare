@@ -6,6 +6,7 @@ import { createHash, randomBytes, scrypt as scryptCb, timingSafeEqual } from 'cr
 import { promisify } from 'util'
 import { db, one } from './db'
 import type { Partner } from './partner'
+import { can, homeFor, type Permission, type StaffRole } from './roles'
 
 // Email + password accounts with server-side sessions (replaces Supabase Auth).
 //  - Passwords: scrypt (N=16384, r=8, p=1) with a random salt per user.
@@ -13,7 +14,12 @@ import type { Partner } from './partner'
 //  - Password guessing: 8 failed attempts per email in 15 minutes locks sign-in briefly.
 
 export type User = { id: string; email: string }
-export type Admin = { user_id: string; email: string; name: string | null }
+export type Admin = {
+  user_id: string; email: string; name: string | null; role: StaffRole
+  commission_pct: number | null; referral_code: string | null; phone: string | null
+}
+
+export type PartnerAccess = { partner: Partner; role: 'owner' | 'branch_staff'; locationIds: string[] | null }
 
 const scrypt = promisify(scryptCb) as (pw: string, salt: Buffer, len: number, opts: object) => Promise<Buffer>
 const COOKIE = 'sns_session'
@@ -160,14 +166,27 @@ export async function completePasswordReset(token: string, password: string): Pr
 export const getAdmin = cache(async (): Promise<Admin | null> => {
   const user = await getUser()
   if (!user) return null
-  return one(db()<Admin[]>`select user_id, email, name from sensare_admins where user_id = ${user.id}`)
+  return one(db()<Admin[]>`
+    select user_id, email, name, role, commission_pct, referral_code, phone
+    from sensare_admins where user_id = ${user.id} and is_active`)
 })
 
-export const getPartner = cache(async (): Promise<Partner | null> => {
+/** The partner this user belongs to: as its owner, or as branch staff (limited to some branches). */
+export const getPartnerAccess = cache(async (): Promise<PartnerAccess | null> => {
   const user = await getUser()
   if (!user) return null
-  return one(db()<Partner[]>`select * from sensare_partners where user_id = ${user.id}`)
+  const owned = await one(db()<Partner[]>`select * from sensare_partners where user_id = ${user.id}`)
+  if (owned) return { partner: owned, role: 'owner', locationIds: null }
+  const member = await one(db()<(Partner & { member_location_ids: string[] })[]>`
+    select p.*, coalesce(array(select l.location_id from sensare_partner_member_locations l where l.user_id = m.user_id), '{}') as member_location_ids
+    from sensare_partner_members m join sensare_partners p on p.id = m.partner_id
+    where m.user_id = ${user.id} and m.is_active`)
+  if (!member) return null
+  const { member_location_ids, ...partner } = member
+  return { partner: partner as Partner, role: 'branch_staff', locationIds: member_location_ids }
 })
+
+export const getPartner = cache(async (): Promise<Partner | null> => (await getPartnerAccess())?.partner ?? null)
 
 export async function hasAnyAdmin(): Promise<boolean> {
   const [{ n }] = await db()<{ n: number }[]>`select count(*)::int as n from sensare_admins`
@@ -176,31 +195,51 @@ export async function hasAnyAdmin(): Promise<boolean> {
 
 // ---- Page guards (redirect) ---------------------------------------------------------
 
-export async function requireAdminPage(): Promise<Admin> {
+/** Signed-in, active staff with the permission; otherwise redirect (login, or the role's home). */
+export async function requireAdminPage(perm?: Permission): Promise<Admin> {
   const admin = await getAdmin()
   if (!admin) redirect('/admin/login')
+  if (perm && !can(admin.role, perm)) redirect(homeFor(admin.role))
   return admin
 }
 
-export async function requireApprovedPartnerPage(): Promise<Partner> {
-  const partner = await getPartner()
-  if (!partner) redirect('/partners/login')
-  if (partner.status !== 'approved') redirect('/partners/status')
-  return partner
+/** Approved partner owner. Branch staff are sent to Daily Sales unless `allowStaff`. */
+export async function requireApprovedPartnerPage(opts: { allowStaff?: boolean } = {}): Promise<Partner> {
+  return (await requirePartnerAccessPage(opts)).partner
+}
+
+export async function requirePartnerAccessPage(opts: { allowStaff?: boolean } = {}): Promise<PartnerAccess> {
+  const access = await getPartnerAccess()
+  if (!access) redirect('/partners/login')
+  if (access.partner.status !== 'approved') redirect('/partners/status')
+  if (access.role !== 'owner' && !opts.allowStaff) redirect('/partners/portal/sales')
+  return access
 }
 
 // ---- Action / route guards (throw) -----------------------------------------------------
 
 export class AuthError extends Error {}
 
-export async function requireAdmin(): Promise<Admin> {
+export async function requireAdmin(perm?: Permission): Promise<Admin> {
   const admin = await getAdmin()
-  if (!admin) throw new AuthError('Not authorized')
+  if (!admin || (perm && !can(admin.role, perm))) throw new AuthError('Not authorized')
   return admin
 }
 
-export async function requireApprovedPartner(): Promise<Partner> {
-  const partner = await getPartner()
-  if (!partner || partner.status !== 'approved') throw new AuthError('Not authorized')
-  return partner
+/** Approved partner owner (default), or branch staff when `allowStaff`. */
+export async function requireApprovedPartner(opts: { allowStaff?: boolean } = {}): Promise<Partner> {
+  return (await requirePartnerAccess(opts)).partner
+}
+
+export async function requirePartnerAccess(opts: { allowStaff?: boolean } = {}): Promise<PartnerAccess> {
+  const access = await getPartnerAccess()
+  if (!access || access.partner.status !== 'approved') throw new AuthError('Not authorized')
+  if (access.role !== 'owner' && !opts.allowStaff) throw new AuthError('Not authorized')
+  return access
+}
+
+/** Can this staff member see this partner? (Account managers: only their assigned partners.) */
+export async function canAccessPartner(admin: Admin, partnerId: string): Promise<boolean> {
+  if (admin.role !== 'account_manager') return true
+  return !!(await one(db()`select 1 from sensare_partners where id = ${partnerId} and account_manager_id = ${admin.user_id}`))
 }

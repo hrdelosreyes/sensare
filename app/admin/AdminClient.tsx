@@ -9,8 +9,9 @@ type Testimonial = Record<string, unknown>
 
 const tabs = ['Orders', 'Products', 'Restock Queue', 'Newsletter', 'Testimonials']
 
-export default function AdminClient({ orders, products, restock, subscribers, testimonials }: {
+export default function AdminClient({ orders, products, restock, subscribers, testimonials, canEditStock, showMoney }: {
   orders: Order[]; products: Product[]; restock: Restock[]; subscribers: Subscriber[]; testimonials: Testimonial[]
+  canEditStock: boolean; showMoney: boolean
 }) {
   const [tab, setTab] = useState('Orders')
 
@@ -29,7 +30,7 @@ export default function AdminClient({ orders, products, restock, subscribers, te
           {[
             { label: 'Total Orders', value: orders.length },
             { label: 'Paid Orders', value: paid },
-            { label: 'Revenue', value: `₱${revenue.toLocaleString()}` },
+            ...(showMoney ? [{ label: 'Revenue', value: `₱${revenue.toLocaleString()}` }] : []),
             { label: 'Restock Queue', value: restock.length },
             { label: 'Subscribers', value: subscribers.length },
           ].map(s => (
@@ -96,7 +97,7 @@ export default function AdminClient({ orders, products, restock, subscribers, te
                   <p style={{ fontFamily: 'PlayfairDisplay', fontWeight: 700, fontSize: 18, color: 'var(--cream)', marginBottom: 4 }}>{p.name as string}</p>
                   <p style={{ fontFamily: 'PlayfairDisplay', fontSize: 13, color: 'var(--text-muted)' }}>₱{(p.price_php as number)?.toFixed(0)} · Stock: {p.stock_qty as number}</p>
                 </div>
-                <StockEditor productId={p.id as string} currentStock={p.stock_qty as number} />
+                {canEditStock && <StockEditor productId={p.id as string} currentStock={p.stock_qty as number} />}
               </div>
             ))}
           </div>
