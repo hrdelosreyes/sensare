@@ -32,7 +32,7 @@ Next.js 16 (read node_modules/next/dist/docs first — `proxy.ts` not middleware
 
 ## Preferences & conventions
 - Brand wordmark font: **Oleo Script** ("Sensarè" only); Allura for script accents; Playfair Display for headings/text
-- Colour direction (proposed 2026-11-19, not yet applied): soft blush base, analogous rose-gold/rose/berry + split-complementary sage; dark only for hero/footer → memory/context/brand.md
+- Colour palette (applied 2026-11-19, tokens in app/globals.css; `.on-dark` for dark bands): soft blush base, analogous rose-gold/rose/berry + split-complementary sage; dark only for hero/footer → memory/context/brand.md
 - Contact email everywhere: **mysensare@gmail.com** (sender stays noreply@mysensare.com, Reply-To Gmail)
 - Must be mobile-friendly (check at iPhone width)
 - Ask before merging/deploying; when asked: open PR → merge

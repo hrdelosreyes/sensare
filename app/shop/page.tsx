@@ -17,7 +17,7 @@ export default async function ShopPage() {
 
   return (
     <div style={{ paddingTop: 72 }}>
-      <div style={{ padding: '64px 24px 32px', textAlign: 'center', borderBottom: '1px solid rgba(201,144,106,0.1)' }}>
+      <div style={{ padding: '64px 24px 32px', textAlign: 'center', borderBottom: '1px solid rgba(164,82,63,0.1)' }}>
         <p style={{ fontFamily: 'Allura', fontSize: 32, color: 'var(--rose-gold)', marginBottom: 8 }}>The Collection</p>
         <h1 style={{ fontFamily: 'PlayfairDisplay', fontWeight: 700, fontSize: 'clamp(32px, 5vw, 56px)', color: 'var(--cream)', marginBottom: 16 }}>Choose Your Ritual</h1>
         <p style={{ fontFamily: 'PlayfairDisplay', fontSize: 16, color: 'var(--cream-dim)', maxWidth: 480, margin: '0 auto' }}>
@@ -38,14 +38,14 @@ export default async function ShopPage() {
             const imgSrc = productImages[product.slug as string] || '/images/product-1.png'
 
             return (
-              <div key={product.id as string} style={{ background: 'var(--chocolate)', border: '1px solid rgba(201,144,106,0.15)', borderRadius: 4, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+              <div key={product.id as string} style={{ background: 'var(--chocolate)', border: '1px solid rgba(164,82,63,0.15)', borderRadius: 4, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
                 <div style={{ height: 320, position: 'relative', overflow: 'hidden' }}>
                   <Image src={imgSrc} alt={product.name as string} fill style={{ objectFit: 'cover', objectPosition: 'center' }} />
                   {isOutOfStock && (
-                    <div style={{ position: 'absolute', top: 20, left: 20, background: 'rgba(15,7,5,0.9)', padding: '5px 14px', fontFamily: 'PlayfairDisplay', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--text-muted)' }}>Sold Out</div>
+                    <div style={{ position: 'absolute', top: 20, left: 20, background: 'rgba(252,245,242,0.92)', padding: '5px 14px', fontFamily: 'PlayfairDisplay', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--fg-soft)' }}>Sold Out</div>
                   )}
                   {!isOutOfStock && hasDiscount && (
-                    <div style={{ position: 'absolute', top: 20, left: 20, background: 'var(--rose-gold)', padding: '5px 14px', fontFamily: 'PlayfairDisplay', fontWeight: 700, fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--espresso)' }}>
+                    <div style={{ position: 'absolute', top: 20, left: 20, background: 'var(--berry)', padding: '5px 14px', fontFamily: 'PlayfairDisplay', fontWeight: 700, fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: '#FFF5F3' }}>
                       Save ₱{((product.compare_at_price_php as number) - (product.price_php as number)).toFixed(0)}
                     </div>
                   )}
@@ -56,7 +56,7 @@ export default async function ShopPage() {
                   <h2 style={{ fontFamily: 'PlayfairDisplay', fontWeight: 700, fontSize: 26, color: 'var(--cream)', marginBottom: 14 }}>{product.name as string}</h2>
                   <p style={{ fontFamily: 'PlayfairDisplay', fontSize: 15, color: 'var(--cream-dim)', lineHeight: 1.8, marginBottom: 24, flex: 1 }}>{product.description as string}</p>
 
-                  <div style={{ borderTop: '1px solid rgba(201,144,106,0.15)', paddingTop: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+                  <div style={{ borderTop: '1px solid rgba(164,82,63,0.15)', paddingTop: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
                     <div>
                       <span style={{ fontFamily: 'PlayfairDisplay', fontWeight: 700, fontSize: 26, color: 'var(--rose-gold)' }}>₱{(product.price_php as number).toFixed(0)}</span>
                       {hasDiscount && <span style={{ fontFamily: 'PlayfairDisplay', fontSize: 15, color: 'var(--text-muted)', textDecoration: 'line-through', marginLeft: 10 }}>₱{(product.compare_at_price_php as number).toFixed(0)}</span>}
@@ -79,7 +79,7 @@ export default async function ShopPage() {
       </div>
 
       {/* Trust signals */}
-      <div style={{ borderTop: '1px solid rgba(201,144,106,0.1)', padding: '48px 24px' }}>
+      <div style={{ borderTop: '1px solid rgba(164,82,63,0.1)', padding: '48px 24px' }}>
         <div style={{ maxWidth: 900, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 32, textAlign: 'center' }}>
           {[
             { icon: '🌿', label: 'All Natural', desc: 'No artificial flavors or preservatives' },

@@ -88,7 +88,7 @@ export default async function SalesPage({ searchParams }: { searchParams: Promis
                 {last14.map(d => {
                   const v = byDay.get(d)
                   return (
-                    <tr key={d} style={d === date ? { background: 'rgba(201,144,106,0.08)' } : undefined}>
+                    <tr key={d} style={d === date ? { background: 'rgba(164,82,63,0.08)' } : undefined}>
                       <td>{fmtDate(d)}{d === today && <span className="pp-muted"> · today</span>}</td>
                       <td className="pp-num">{v ? v.units : <span className="pp-muted">—</span>}</td>
                       <td className="pp-num">{v && v.revenue > 0 ? peso(v.revenue, 0) : <span className="pp-muted">—</span>}</td>

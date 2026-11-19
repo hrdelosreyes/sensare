@@ -55,7 +55,7 @@ export default function ReportView({ report, csvHref, title, extraParams = {}, f
           <a className="pp-link no-print" href={csvHref('daily')} style={{ fontSize: 13 }}>Download CSV</a>
         </div>
         {report.daily.length === 0 ? <p className="pp-empty">No sales recorded in this period.</p> : (
-          <div role="img" aria-label={`Bar chart of daily boxes sold, peak ${max}`} style={{ display: 'flex', alignItems: 'flex-end', gap: 2, height: 160, borderBottom: '1px solid rgba(201,144,106,0.25)', overflowX: 'auto' }}>
+          <div role="img" aria-label={`Bar chart of daily boxes sold, peak ${max}`} style={{ display: 'flex', alignItems: 'flex-end', gap: 2, height: 160, borderBottom: '1px solid rgba(164,82,63,0.25)', overflowX: 'auto' }}>
             {report.daily.map(d => (
               <div key={d.sale_date} className="pp-bar" title={`${fmtDate(d.sale_date)}: ${d.units} boxes · ${peso(d.sales_value, 0)}`}
                 style={{ flex: '1 0 6px', maxWidth: 36, height: '100%', display: 'flex', alignItems: 'flex-end' }}>
@@ -126,7 +126,7 @@ export default function ReportView({ report, csvHref, title, extraParams = {}, f
                     <td><a className="pp-link" href={`/admin/partners/${p.partner_id}`}>{p.partner_name}</a></td>
                     <td className="pp-num">{p.sold}</td><td className="pp-num">{peso(p.sales_value, 0)}</td><td className="pp-num">{pct(p.sell_through)}</td>
                     <td className="pp-num">{p.closing}</td><td className="pp-num">{peso(p.order_value, 0)}</td><td className="pp-num">{peso(p.outstanding, 0)}</td>
-                    <td className="pp-num" style={{ color: p.overdue > 0 ? '#e09a9a' : undefined }}>{peso(p.overdue, 0)}</td>
+                    <td className="pp-num" style={{ color: p.overdue > 0 ? 'var(--danger)' : undefined }}>{peso(p.overdue, 0)}</td>
                   </tr>
                 ))}
               </tbody>

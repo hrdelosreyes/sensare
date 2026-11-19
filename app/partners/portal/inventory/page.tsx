@@ -68,7 +68,7 @@ export default async function InventoryPage() {
                         {m.movement_type === 'delivery' ? `Delivery ${m.order_number ?? ''}` : m.movement_type === 'sale' ? 'Sale' : ADJUSTMENT_REASONS[m.reason] ?? 'Adjustment'}
                         {m.notes && m.movement_type === 'adjustment' && <><br /><span className="pp-muted" style={{ fontSize: 12 }}>{m.notes}</span></>}
                       </td>
-                      <td className="pp-num" style={{ color: m.qty_change > 0 ? '#98d898' : 'var(--cream-dim)' }}>{m.qty_change > 0 ? '+' : ''}{m.qty_change}</td>
+                      <td className="pp-num" style={{ color: m.qty_change > 0 ? 'var(--sage)' : 'var(--cream-dim)' }}>{m.qty_change > 0 ? '+' : ''}{m.qty_change}</td>
                     </tr>
                   ))}
                 </tbody>

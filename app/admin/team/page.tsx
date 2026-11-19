@@ -24,7 +24,7 @@ export default async function TeamPage() {
         <p className="pp-h2">People & roles</p>
         <div className="pp-stack" style={{ gap: 0 }}>
           {list.map(a => (
-            <div key={a.user_id} style={{ borderTop: '1px solid rgba(201,144,106,0.1)', padding: '16px 0' }}>
+            <div key={a.user_id} style={{ borderTop: '1px solid rgba(164,82,63,0.1)', padding: '16px 0' }}>
               <div className="pp-row" style={{ justifyContent: 'space-between', marginBottom: 10 }}>
                 <div>
                   <strong style={{ color: 'var(--cream)' }}>{a.name || a.email}</strong>

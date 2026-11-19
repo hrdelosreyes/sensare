@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 export default function AboutPage() {
   return (
     <div style={{ paddingTop: 72 }}>
-      <section style={{ padding: '96px 24px 64px', textAlign: 'center', borderBottom: '1px solid rgba(201,144,106,0.1)' }}>
+      <section style={{ padding: '96px 24px 64px', textAlign: 'center', borderBottom: '1px solid rgba(164,82,63,0.1)' }}>
         <p style={{ fontFamily: 'Allura', fontSize: 36, color: 'var(--rose-gold)', marginBottom: 12 }}>Our Story</p>
         <h1 style={{ fontFamily: 'PlayfairDisplay', fontWeight: 700, fontStyle: 'italic', fontSize: 'clamp(32px, 5vw, 56px)', color: 'var(--cream)' }}>
           Born from a Desire<br />to Slow Down
@@ -42,7 +42,7 @@ export default function AboutPage() {
           We're Filipino. We believe in the ritual of sharing food — <em>kain tayo</em> as an act of care. Sensarè is that spirit, expressed through the finest cacao from Davao — the cacao capital of the Philippines — and the wisdom of ancient botanicals from around the world.
         </p>
 
-        <div style={{ border: '1px solid rgba(201,144,106,0.2)', borderRadius: 4, padding: '36px 40px', background: 'var(--mocha)', marginBottom: 48 }}>
+        <div style={{ border: '1px solid rgba(164,82,63,0.2)', borderRadius: 4, padding: '36px 40px', background: 'var(--mocha)', marginBottom: 48 }}>
           <p style={{ fontFamily: 'PlayfairDisplay', fontStyle: 'italic', fontSize: 20, color: 'var(--cream)', lineHeight: 1.8, marginBottom: 20 }}>
             "We don't sell chocolate. We sell an excuse to slow down and look at each other."
           </p>
@@ -62,7 +62,7 @@ export default function AboutPage() {
             { title: 'Honest botanicals', desc: 'We list every ingredient. No "proprietary blends." No mystery.' },
             { title: 'Made in the Philippines', desc: 'Proudly local. From bean to box.' },
           ].map(p => (
-            <div key={p.title} style={{ padding: '20px 0', borderTop: '1px solid rgba(201,144,106,0.15)' }}>
+            <div key={p.title} style={{ padding: '20px 0', borderTop: '1px solid rgba(164,82,63,0.15)' }}>
               <p style={{ fontFamily: 'PlayfairDisplay', fontWeight: 700, fontSize: 15, color: 'var(--rose-gold)', marginBottom: 8 }}>{p.title}</p>
               <p style={{ fontFamily: 'PlayfairDisplay', fontSize: 14, color: 'var(--cream-dim)', lineHeight: 1.7 }}>{p.desc}</p>
             </div>
@@ -70,7 +70,7 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <section style={{ padding: '64px 24px', textAlign: 'center', background: 'var(--chocolate)', borderTop: '1px solid rgba(201,144,106,0.1)' }}>
+      <section style={{ padding: '64px 24px', textAlign: 'center', background: 'var(--chocolate)', borderTop: '1px solid rgba(164,82,63,0.1)' }}>
         <Link href="/shop" style={{ padding: '16px 40px', background: 'var(--rose-gold)', color: 'var(--espresso)', fontFamily: 'PlayfairDisplay', fontWeight: 700, fontSize: 14, letterSpacing: 2, textTransform: 'uppercase', textDecoration: 'none', borderRadius: 2 }}>
           Shop the Collection
         </Link>

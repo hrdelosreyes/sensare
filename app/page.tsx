@@ -34,7 +34,7 @@ export default async function HomePage() {
   return (
     <div>
       {/* Hero */}
-      <section style={{
+      <section className="on-dark" style={{
         minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
         position: 'relative', overflow: 'hidden',
         padding: '120px 24px 80px', textAlign: 'center',
@@ -43,7 +43,7 @@ export default async function HomePage() {
         <Image src="/images/hero.png" alt="Sensarè couple" fill priority
           style={{ objectFit: 'cover', objectPosition: 'center top' }} />
         {/* Dark overlay */}
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(15,7,5,0.55) 0%, rgba(15,7,5,0.7) 100%)' }} />
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(51,25,31,0.5) 0%, rgba(51,25,31,0.72) 100%)' }} />
         {/* Decorative wave — top right */}
         <div style={{ position: 'absolute', top: -40, right: -60, width: 520, height: 340, pointerEvents: 'none', opacity: 0.09, filter: 'invert(1) sepia(0.2) brightness(1.5)' }}>
           <Image src="/Asset 1.png" alt="" fill style={{ objectFit: 'contain' }} />
@@ -61,7 +61,7 @@ export default async function HomePage() {
             <Link href="/shop" style={{ padding: '16px 40px', background: 'var(--rose-gold)', color: 'var(--espresso)', fontFamily: 'PlayfairDisplay', fontWeight: 700, fontSize: 14, letterSpacing: 2, textTransform: 'uppercase', textDecoration: 'none', borderRadius: 2 }}>
               Shop Now
             </Link>
-            <Link href="/pages/the-sensare-ritual" style={{ padding: '16px 40px', border: '1px solid rgba(201,144,106,0.5)', color: 'var(--rose-gold-light)', fontFamily: 'PlayfairDisplay', fontSize: 14, letterSpacing: 2, textTransform: 'uppercase', textDecoration: 'none', borderRadius: 2 }}>
+            <Link href="/pages/the-sensare-ritual" style={{ padding: '16px 40px', border: '1px solid rgba(164,82,63,0.5)', color: 'var(--rose-gold-light)', fontFamily: 'PlayfairDisplay', fontSize: 14, letterSpacing: 2, textTransform: 'uppercase', textDecoration: 'none', borderRadius: 2 }}>
               Discover the Ritual
             </Link>
           </div>
@@ -85,9 +85,9 @@ export default async function HomePage() {
       </section>
 
       {/* Brand story strip */}
-      <section style={{ borderTop: '1px solid rgba(201,144,106,0.1)', borderBottom: '1px solid rgba(201,144,106,0.1)', position: 'relative', overflow: 'hidden' }}>
+      <section className="on-dark" style={{ position: 'relative', overflow: 'hidden' }}>
         <Image src="/images/brand-story.png" alt="Ana & Ramon" fill style={{ objectFit: 'cover', objectPosition: 'center' }} />
-        <div style={{ position: 'absolute', inset: 0, background: 'rgba(15,7,5,0.75)' }} />
+        <div style={{ position: 'absolute', inset: 0, background: 'rgba(51,25,31,0.78)' }} />
         <div style={{ maxWidth: 800, margin: '0 auto', textAlign: 'center', padding: '80px 24px', position: 'relative' }}>
           <p style={{ fontFamily: 'Allura', fontSize: 36, color: 'var(--rose-gold)', marginBottom: 16 }}>Born from Davao</p>
           <p style={{ fontFamily: 'PlayfairDisplay', fontSize: 18, fontStyle: 'italic', color: 'var(--cream-dim)', lineHeight: 1.9, marginBottom: 28 }}>
@@ -112,14 +112,14 @@ export default async function HomePage() {
         <div className="ritual-steps">
           {ritualSteps.map(step => (
             <div key={step.num} style={{ textAlign: 'center', padding: '32px 16px' }}>
-              <p style={{ fontFamily: 'OleoScript', fontSize: 40, color: 'rgba(201,144,106,0.25)', marginBottom: 8 }}>{step.num}</p>
+              <p style={{ fontFamily: 'OleoScript', fontSize: 40, color: 'rgba(164,82,63,0.25)', marginBottom: 8 }}>{step.num}</p>
               <p style={{ fontFamily: 'PlayfairDisplay', fontWeight: 700, fontSize: 16, color: 'var(--rose-gold)', marginBottom: 10 }}>{step.title}</p>
               <p style={{ fontFamily: 'PlayfairDisplay', fontSize: 14, color: 'var(--cream-dim)', lineHeight: 1.7 }}>{step.body}</p>
             </div>
           ))}
         </div>
         <div style={{ textAlign: 'center', marginTop: 48 }}>
-          <Link href="/pages/the-sensare-ritual" style={{ padding: '14px 36px', border: '1px solid rgba(201,144,106,0.4)', color: 'var(--rose-gold-light)', fontFamily: 'PlayfairDisplay', fontSize: 13, letterSpacing: 2, textTransform: 'uppercase', textDecoration: 'none', borderRadius: 2 }}>
+          <Link href="/pages/the-sensare-ritual" style={{ padding: '14px 36px', border: '1px solid rgba(164,82,63,0.4)', color: 'var(--rose-gold-light)', fontFamily: 'PlayfairDisplay', fontSize: 13, letterSpacing: 2, textTransform: 'uppercase', textDecoration: 'none', borderRadius: 2 }}>
             Experience the Full Ritual
           </Link>
         </div>
@@ -127,14 +127,14 @@ export default async function HomePage() {
 
       {/* Testimonials */}
       {testimonials.length > 0 && (
-        <section style={{ background: 'var(--chocolate)', padding: '96px 24px', borderTop: '1px solid rgba(201,144,106,0.1)' }}>
+        <section style={{ background: 'var(--chocolate)', padding: '96px 24px', borderTop: '1px solid rgba(164,82,63,0.1)' }}>
           <div style={{ textAlign: 'center', marginBottom: 56 }}>
             <p style={{ fontFamily: 'Allura', fontSize: 32, color: 'var(--rose-gold)', marginBottom: 8 }}>They Felt It Too</p>
             <h2 style={{ fontFamily: 'PlayfairDisplay', fontWeight: 700, fontSize: 'clamp(24px, 4vw, 36px)', color: 'var(--cream)' }}>Real Moments. Real Couples.</h2>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 32, maxWidth: 1100, margin: '0 auto' }}>
             {testimonials.map((t: Record<string, unknown>) => (
-              <div key={t.id as string} style={{ background: 'var(--mocha)', padding: '36px 32px', borderRadius: 4, border: '1px solid rgba(201,144,106,0.12)' }}>
+              <div key={t.id as string} style={{ background: 'var(--mocha)', padding: '36px 32px', borderRadius: 4, border: '1px solid rgba(164,82,63,0.12)' }}>
                 <p style={{ fontFamily: 'PlayfairDisplay', fontSize: 32, color: 'var(--rose-gold)', marginBottom: 12, lineHeight: 1 }}>❝</p>
                 <p style={{ fontFamily: 'PlayfairDisplay', fontStyle: 'italic', fontSize: 16, color: 'var(--cream-dim)', lineHeight: 1.8, marginBottom: 20 }}>{t.quote as string}</p>
                 <p style={{ fontFamily: 'PlayfairDisplay', fontWeight: 700, fontSize: 13, color: 'var(--rose-gold)' }}>{t.customer_name as string}</p>
@@ -162,8 +162,8 @@ export default async function HomePage() {
             { name: 'Ceylon Cinnamon', desc: 'Warming spice, enhances circulation' },
             { name: 'Vegan', desc: 'No dairy, no animal products' },
           ].map(item => (
-            <div key={item.name} style={{ padding: '20px 28px', border: '1px solid rgba(201,144,106,0.2)', borderRadius: 2, minWidth: 180, flex: '1 1 180px' }}>
-              <p style={{ fontFamily: 'PlayfairDisplay', fontWeight: 700, fontSize: 15, color: 'var(--rose-gold)', marginBottom: 6 }}>{item.name}</p>
+            <div key={item.name} style={{ padding: '20px 28px', background: 'var(--sage-tint)', border: '1px solid rgba(71,107,102,0.25)', borderRadius: 2, minWidth: 180, flex: '1 1 180px' }}>
+              <p style={{ fontFamily: 'PlayfairDisplay', fontWeight: 700, fontSize: 15, color: 'var(--sage)', marginBottom: 6 }}>{item.name}</p>
               <p style={{ fontFamily: 'PlayfairDisplay', fontSize: 13, color: 'var(--text-muted)' }}>{item.desc}</p>
             </div>
           ))}
@@ -171,7 +171,7 @@ export default async function HomePage() {
       </section>
 
       {/* Final CTA */}
-      <section style={{ padding: '100px 24px', textAlign: 'center', background: `radial-gradient(ellipse at center, rgba(201,144,106,0.1) 0%, transparent 70%), var(--mocha)`, borderTop: '1px solid rgba(201,144,106,0.1)', position: 'relative', overflow: 'hidden' }}>
+      <section style={{ padding: '100px 24px', textAlign: 'center', background: `radial-gradient(ellipse at center, rgba(164,82,63,0.1) 0%, transparent 70%), var(--mocha)`, borderTop: '1px solid rgba(164,82,63,0.1)', position: 'relative', overflow: 'hidden' }}>
         {/* Decorative wave — centered behind text */}
         <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 700, height: 240, pointerEvents: 'none', opacity: 0.08, filter: 'invert(1) sepia(0.2) brightness(1.5)' }}>
           <Image src="/Asset 2.png" alt="" fill style={{ objectFit: 'contain' }} />
@@ -202,16 +202,16 @@ function ProductCard({ product }: { product: Record<string, unknown> }) {
   const imgSrc = productImages[product.slug as string] || '/images/product-1.png'
 
   return (
-    <div style={{ background: 'var(--chocolate)', border: '1px solid rgba(201,144,106,0.15)', borderRadius: 4, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ background: 'var(--chocolate)', border: '1px solid rgba(164,82,63,0.15)', borderRadius: 4, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
       <div style={{ height: 280, position: 'relative', overflow: 'hidden' }}>
         <Image src={imgSrc} alt={product.name as string} fill style={{ objectFit: 'cover', objectPosition: 'center', transition: 'transform 0.4s ease' }} />
         {isOutOfStock && (
-          <div style={{ position: 'absolute', top: 16, right: 16, background: 'rgba(15,7,5,0.85)', padding: '4px 12px', fontFamily: 'PlayfairDisplay', fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--text-muted)' }}>
+          <div style={{ position: 'absolute', top: 16, right: 16, background: 'rgba(252,245,242,0.92)', padding: '4px 12px', fontFamily: 'PlayfairDisplay', fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--fg-soft)' }}>
             Sold Out
           </div>
         )}
         {!isOutOfStock && hasDiscount && (
-          <div style={{ position: 'absolute', top: 16, right: 16, background: 'var(--rose-gold)', padding: '4px 12px', fontFamily: 'PlayfairDisplay', fontWeight: 700, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--espresso)' }}>
+          <div style={{ position: 'absolute', top: 16, right: 16, background: 'var(--berry)', padding: '4px 12px', fontFamily: 'PlayfairDisplay', fontWeight: 700, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: '#FFF5F3' }}>
             Save ₱{((product.compare_at_price_php as number) - (product.price_php as number)).toFixed(0)}
           </div>
         )}

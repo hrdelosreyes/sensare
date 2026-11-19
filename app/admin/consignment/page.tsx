@@ -64,7 +64,7 @@ export default async function AdminConsignmentPage({ searchParams }: { searchPar
       </div>
 
       {may('payments.review') && pending.length > 0 && (
-        <div className="pp-card" style={{ borderColor: 'rgba(230,180,80,0.4)' }}>
+        <div className="pp-card" style={{ borderColor: 'rgba(122,82,0,0.35)' }}>
           <p className="pp-h2">Bank transfers to verify</p>
           <div className="pp-table-wrap">
             <table className="pp-table">
@@ -98,7 +98,7 @@ export default async function AdminConsignmentPage({ searchParams }: { searchPar
               <thead><tr><th>Partner</th><th>Period</th><th>Next period</th><th className="pp-num">Sold, unsettled</th><th className="pp-num">Unpaid stock</th><th></th></tr></thead>
               <tbody>
                 {rows.map(r => (
-                  <tr key={r.partner.id} style={r.partner.id === sp.partner ? { background: 'rgba(201,144,106,0.08)' } : undefined}>
+                  <tr key={r.partner.id} style={r.partner.id === sp.partner ? { background: 'rgba(164,82,63,0.08)' } : undefined}>
                     <td><Link className="pp-link" href={`/admin/partners/${r.partner.id}`}>{r.partner.business_name}</Link></td>
                     <td>{r.st.periodDays} days</td>
                     <td>{r.st.nextFrom && r.st.defaultTo ? periodLabel(r.st.nextFrom, r.st.defaultTo) : 'Settled to date'}{r.st.isDue && <span className="pp-badge pp-badge-warn" style={{ marginLeft: 8 }}>Due</span>}</td>

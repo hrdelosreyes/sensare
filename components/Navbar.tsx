@@ -16,9 +16,9 @@ export default function Navbar() {
   return (
     <nav style={{
       position: 'fixed', top: 0, left: 0, right: 0, zIndex: 50,
-      backgroundColor: 'rgba(15,7,5,0.92)',
+      backgroundColor: 'rgba(252,245,242,0.94)',
       backdropFilter: 'blur(12px)',
-      borderBottom: '1px solid rgba(201,144,106,0.15)',
+      borderBottom: '1px solid rgba(164,82,63,0.15)',
     }}>
       <div style={{
         maxWidth: 1200, margin: '0 auto',
@@ -69,7 +69,7 @@ export default function Navbar() {
       {open && (
         <div style={{
           background: 'var(--chocolate)', padding: '24px',
-          borderTop: '1px solid rgba(201,144,106,0.2)',
+          borderTop: '1px solid rgba(164,82,63,0.2)',
           display: 'flex', flexDirection: 'column', gap: 24,
         }}>
           {links.map(l => (

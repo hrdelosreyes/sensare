@@ -57,8 +57,8 @@ export default function RitualPage() {
       {/* Hero */}
       <section style={{
         padding: '96px 24px 80px', textAlign: 'center',
-        background: `radial-gradient(ellipse at center top, rgba(201,144,106,0.07) 0%, transparent 60%), var(--espresso)`,
-        borderBottom: '1px solid rgba(201,144,106,0.1)',
+        background: `radial-gradient(ellipse at center top, rgba(164,82,63,0.07) 0%, transparent 60%), var(--espresso)`,
+        borderBottom: '1px solid rgba(164,82,63,0.1)',
         position: 'relative', overflow: 'hidden',
       }}>
         {/* Decorative wave — bottom left */}
@@ -86,8 +86,8 @@ export default function RitualPage() {
             {/* Step image — full width, cinematic */}
             <div style={{ position: 'relative', height: 360, borderRadius: 4, overflow: 'hidden', marginBottom: 36 }}>
               <Image src={step.image} alt={step.title} fill style={{ objectFit: 'cover', objectPosition: 'center' }} />
-              <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(15,7,5,0.7) 0%, transparent 60%)' }} />
-              <p style={{ position: 'absolute', bottom: 20, left: 24, fontFamily: 'OleoScript', fontSize: 56, color: 'rgba(201,144,106,0.5)', lineHeight: 1 }}>{step.num}</p>
+              <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(51,25,31,0.7) 0%, transparent 60%)' }} />
+              <p style={{ position: 'absolute', bottom: 20, left: 24, fontFamily: 'OleoScript', fontSize: 56, color: 'rgba(232,191,160,0.9)', lineHeight: 1 }}>{step.num}</p>
             </div>
             {/* Step text */}
             <div style={{ display: 'grid', gridTemplateColumns: i % 2 === 0 ? '1fr 2fr' : '2fr 1fr', gap: 32, alignItems: 'start' }}>
@@ -97,10 +97,10 @@ export default function RitualPage() {
               </div>
               <div style={{ order: i % 2 === 0 ? 1 : 0 }}>
                 <p style={{ fontFamily: 'PlayfairDisplay', fontSize: 17, color: 'var(--cream-dim)', lineHeight: 1.9, marginBottom: 16 }}>{step.body}</p>
-                <p style={{ fontFamily: 'PlayfairDisplay', fontStyle: 'italic', fontSize: 14, color: 'var(--text-muted)', borderLeft: '2px solid rgba(201,144,106,0.3)', paddingLeft: 16 }}>{step.tip}</p>
+                <p style={{ fontFamily: 'PlayfairDisplay', fontStyle: 'italic', fontSize: 14, color: 'var(--text-muted)', borderLeft: '2px solid rgba(164,82,63,0.3)', paddingLeft: 16 }}>{step.tip}</p>
               </div>
             </div>
-            {i < steps.length - 1 && <div style={{ width: '100%', height: 1, background: 'rgba(201,144,106,0.08)', marginTop: 48 }} />}
+            {i < steps.length - 1 && <div style={{ width: '100%', height: 1, background: 'rgba(164,82,63,0.08)', marginTop: 48 }} />}
           </div>
         ))}
       </section>
@@ -108,7 +108,7 @@ export default function RitualPage() {
       {/* CTA */}
       <section style={{
         padding: '80px 24px', textAlign: 'center',
-        background: 'var(--mocha)', borderTop: '1px solid rgba(201,144,106,0.1)',
+        background: 'var(--mocha)', borderTop: '1px solid rgba(164,82,63,0.1)',
       }}>
         <p style={{ fontFamily: 'Allura', fontSize: 36, color: 'var(--rose-gold)', marginBottom: 16 }}>Begin Tonight</p>
         <p style={{ fontFamily: 'PlayfairDisplay', fontSize: 16, color: 'var(--cream-dim)', maxWidth: 440, margin: '0 auto 32px', lineHeight: 1.8 }}>

@@ -61,7 +61,7 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ id:
                   return (
                     <tr key={i.id}>
                       <td>{i.product_name}</td><td className="pp-num">{i.case_qty}</td><td className="pp-num">{units}</td>
-                      {order.status === 'submitted' && <td className="pp-num no-print" style={{ color: wh < units ? '#e09a9a' : undefined }}>{wh}</td>}
+                      {order.status === 'submitted' && <td className="pp-num no-print" style={{ color: wh < units ? 'var(--danger)' : undefined }}>{wh}</td>}
                       {money && <><td className="pp-num">{peso(i.case_price_php)}</td><td className="pp-num">{peso(i.line_total_php)}</td></>}
                     </tr>
                   )

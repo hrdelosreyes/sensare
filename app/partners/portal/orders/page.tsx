@@ -29,7 +29,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
               <thead><tr><th>Order</th><th>Branch</th><th>Date</th><th>Status</th><th>Terms</th><th>Payment</th><th>Due</th><th className="pp-num">Total</th><th className="pp-num">Balance</th></tr></thead>
               <tbody>
                 {orders.map(o => (
-                  <tr key={o.id} style={placed && o.order_group_id === placed ? { background: 'rgba(201,144,106,0.08)' } : undefined}>
+                  <tr key={o.id} style={placed && o.order_group_id === placed ? { background: 'rgba(164,82,63,0.08)' } : undefined}>
                     <td><Link className="pp-link" href={`/partners/portal/orders/${o.id}`}>{o.order_number}</Link>
                       {(groupSize.get(o.order_group_id) ?? 1) > 1 && <><br /><span className="pp-muted" style={{ fontSize: 11 }}>split order</span></>}</td>
                     <td>{locationLabel({ name: o.location_name, city: o.location_city })}</td>

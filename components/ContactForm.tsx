@@ -35,24 +35,24 @@ export default function ContactForm() {
               <input
                 type={f.type} required value={(form as Record<string, string>)[f.key]}
                 onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))}
-                style={{ width: '100%', padding: '14px 18px', background: 'var(--chocolate)', border: '1px solid rgba(201,144,106,0.25)', color: 'var(--cream)', fontFamily: 'PlayfairDisplay', fontSize: 15, outline: 'none', borderRadius: 2 }}
+                style={{ width: '100%', padding: '14px 18px', background: 'var(--chocolate)', border: '1px solid rgba(164,82,63,0.25)', color: 'var(--cream)', fontFamily: 'PlayfairDisplay', fontSize: 15, outline: 'none', borderRadius: 2 }}
               />
             </div>
           ))}
           <div style={{ marginBottom: 32 }}>
             <label style={{ display: 'block', fontFamily: 'PlayfairDisplay', fontSize: 13, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 8 }}>Message</label>
             <textarea required rows={6} value={form.message} onChange={e => setForm(p => ({ ...p, message: e.target.value }))}
-              style={{ width: '100%', padding: '14px 18px', background: 'var(--chocolate)', border: '1px solid rgba(201,144,106,0.25)', color: 'var(--cream)', fontFamily: 'PlayfairDisplay', fontSize: 15, outline: 'none', borderRadius: 2, resize: 'vertical' }}
+              style={{ width: '100%', padding: '14px 18px', background: 'var(--chocolate)', border: '1px solid rgba(164,82,63,0.25)', color: 'var(--cream)', fontFamily: 'PlayfairDisplay', fontSize: 15, outline: 'none', borderRadius: 2, resize: 'vertical' }}
             />
           </div>
           <button type="submit" disabled={status === 'loading'} style={{ width: '100%', padding: '16px', background: 'var(--rose-gold)', border: 'none', color: 'var(--espresso)', fontFamily: 'PlayfairDisplay', fontWeight: 700, fontSize: 14, letterSpacing: 2, textTransform: 'uppercase', cursor: 'pointer', borderRadius: 2 }}>
             {status === 'loading' ? 'Sending…' : 'Send Message'}
           </button>
-          {status === 'error' && <p style={{ fontFamily: 'PlayfairDisplay', fontSize: 13, color: '#e07070', marginTop: 12 }}>Something went wrong. Email us directly at mysensare@gmail.com</p>}
+          {status === 'error' && <p style={{ fontFamily: 'PlayfairDisplay', fontSize: 13, color: 'var(--danger)', marginTop: 12 }}>Something went wrong. Email us directly at mysensare@gmail.com</p>}
         </form>
       )}
 
-      <div style={{ marginTop: 56, paddingTop: 32, borderTop: '1px solid rgba(201,144,106,0.1)', textAlign: 'center' }}>
+      <div style={{ marginTop: 56, paddingTop: 32, borderTop: '1px solid rgba(164,82,63,0.1)', textAlign: 'center' }}>
         <p style={{ fontFamily: 'PlayfairDisplay', fontSize: 14, color: 'var(--text-muted)', marginBottom: 8 }}>Prefer email?</p>
         <a href="mailto:mysensare@gmail.com" style={{ fontFamily: 'PlayfairDisplay', fontSize: 16, color: 'var(--rose-gold)' }}>mysensare@gmail.com</a>
       </div>

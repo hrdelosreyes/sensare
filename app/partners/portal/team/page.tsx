@@ -28,7 +28,7 @@ export default async function PartnerTeamPage() {
       <div className="pp-card">
         <p className="pp-h2">Branch staff</p>
         {members.length === 0 ? <p className="pp-empty">No staff yet.</p> : members.map(m => (
-          <div key={m.user_id} style={{ borderTop: '1px solid rgba(201,144,106,0.1)', padding: '16px 0' }}>
+          <div key={m.user_id} style={{ borderTop: '1px solid rgba(164,82,63,0.1)', padding: '16px 0' }}>
             <div className="pp-row" style={{ justifyContent: 'space-between', marginBottom: 8 }}>
               <div>
                 <strong style={{ color: 'var(--cream)' }}>{m.name || m.email}</strong>
